@@ -1,0 +1,2214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scam Intelligence Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; }
+        body { background: #f5f7fa; color: #333; min-height: 100vh; overflow-x: hidden; padding-bottom: 60px; }
+        .container { width: 100%; max-width: none; margin: 0; padding: 15px; padding-top: 90px; }
+        .fixed-header { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: #f5f7fa; padding: 12px 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); border-bottom: 1px solid #e1e5eb; }
+        .header { background: white; border-radius: 8px; padding: 12px 15px; box-shadow: 0 1px 8px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+
+        /* ── Logo + username ── */
+        .logo { display: flex; flex-direction: column; gap: 2px; }
+        .logo-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .logo h1 { font-size: 18px; color: #2c3e50; }
+        .header-username {
+            font-size: 12px;
+            color: #7f8c8d;
+            font-weight: 500;
+            border-left: 1.5px solid #dde3ed;
+            padding-left: 10px;
+            white-space: nowrap;
+        }
+        .logo p { color: #7f8c8d; font-size: 12px; }
+
+        .dev-credit-footer { position: fixed; bottom: 0; right: 0; z-index: 1001; background: #2c3e50; color: #bdc3c7; font-size: 11px; font-weight: 500; padding: 5px 14px; border-top-left-radius: 6px; white-space: nowrap; box-shadow: -2px -2px 6px rgba(0,0,0,0.12); }
+        .dev-credit-footer span { color: #3498db; font-weight: 700; }
+        .header-controls { display: flex; align-items: center; gap: 10px; }
+        .page-selector { display: flex; align-items: center; gap: 6px; }
+        .page-selector label { font-weight: 600; color: #2c3e50; font-size: 12px; white-space: nowrap; }
+        .page-select { padding: 7px 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 12px; background: white; cursor: pointer; min-width: 150px; height: 34px; }
+        .page-select:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 2px rgba(52,152,219,0.2); }
+        .header-actions { display: flex; gap: 6px; }
+        .btn { padding: 6px 12px; border: none; border-radius: 5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 12px; transition: all 0.2s; white-space: nowrap; height: 34px; }
+        .btn-primary { background: #3498db; color: white; }
+        .btn-primary:hover { background: #2980b9; }
+        .btn-success { background: #2ecc71; color: white; }
+        .btn-success:hover { background: #27ae60; }
+        .btn-outline { background: white; color: #3498db; border: 1.5px solid #3498db; }
+        .btn-outline:hover { background: #f0f7ff; }
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-warning:hover { background: #e67e22; }
+        .page-content { display: none; }
+        .page-content.active { display: block; }
+
+        /* ============================================================
+           SCRAPING PAGE
+        ============================================================ */
+        .scraping-page .filters { background: white; border-radius: 8px; padding: 12px; margin-bottom: 12px; box-shadow: 0 1px 8px rgba(0,0,0,0.08); width: 100%; }
+        .scraping-page .filters-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .scraping-page .filters-header h2 { font-size: 14px; color: #2c3e50; }
+        .scraping-page .clear-filters { background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; height: 30px; }
+        .scraping-page .clear-filters:hover { background: #c0392b; }
+        .scraping-page .filters-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; width: 100%; }
+        .scraping-page .filter-group { display: flex; flex-direction: column; gap: 5px; }
+        .scraping-page .filter-group label { font-size: 12px; font-weight: 600; color: #2c3e50; display: flex; align-items: center; gap: 5px; }
+        .scraping-page .search-box { position: relative; width: 100%; }
+        .scraping-page .search-box input { width: 100%; padding: 8px 12px 8px 32px; border: 1px solid #ddd; border-radius: 5px; font-size: 12px; background: white; height: 34px; }
+        .scraping-page .search-box input:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 2px rgba(52,152,219,0.2); }
+        .scraping-page .search-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: #7f8c8d; font-size: 14px; }
+        .scraping-page .filter-group select,
+        .scraping-page .filter-group input[type="date"] { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 12px; background: white; cursor: pointer; height: 34px; }
+        .scraping-page .filter-group select:focus,
+        .scraping-page .filter-group input[type="date"]:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 2px rgba(52,152,219,0.2); }
+        .scraping-page .filter-group input[type="date"].active-filter { border-color: #3498db; background: #ebf5fb; }
+        .date-range-group { display: flex; gap: 6px; align-items: center; }
+        .date-range-group input[type="date"] { flex: 1; padding: 8px 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 12px; background: white; height: 34px; }
+        .date-range-group input[type="date"]:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 2px rgba(52,152,219,0.2); }
+        .date-range-group input[type="date"].active-filter { border-color: #3498db; background: #ebf5fb; }
+        .date-range-sep { font-size: 11px; color: #7f8c8d; white-space: nowrap; }
+        .scraping-page .table-container { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 8px rgba(0,0,0,0.08); max-height: calc(100vh - 300px); overflow-x: auto; overflow-y: auto; width: 100%; }
+        .scraping-page table { width: max-content; min-width: 100%; border-collapse: collapse; table-layout: auto; }
+        .scraping-page th, .scraping-page td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; vertical-align: middle; font-size: 12px; white-space: nowrap; }
+        .scraping-page th { background: #f8f9fa; font-weight: 600; color: #2c3e50; position: sticky; top: 0; z-index: 10; border-right: 1px solid #eee; }
+        .scraping-page th:last-child { border-right: none; }
+        .scraping-page tr:hover { background: #f8fafc; }
+
+        /* ============================================================
+           BS INVESTMENT SCAM PAGE
+        ============================================================ */
+        .investment-page .filters { background: white; border-radius: 8px; padding: 12px; margin-bottom: 12px; box-shadow: 0 1px 8px rgba(0,0,0,0.08); width: 100%; }
+        .investment-page .filters-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .investment-page .filters-header h2 { font-size: 14px; color: #2c3e50; }
+        .investment-page .clear-filters { background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; height: 30px; }
+        .investment-page .clear-filters:hover { background: #c0392b; }
+        .investment-page .filters-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; width: 100%; }
+        .investment-page .filter-group { display: flex; flex-direction: column; gap: 5px; }
+        .investment-page .filter-group label { font-size: 12px; font-weight: 600; color: #2c3e50; display: flex; align-items: center; gap: 5px; }
+        .investment-page .search-box { position: relative; width: 100%; }
+        .investment-page .search-box input { width: 100%; padding: 8px 12px 8px 32px; border: 1px solid #ddd; border-radius: 5px; font-size: 12px; background: white; height: 34px; }
+        .investment-page .search-box input:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 2px rgba(52,152,219,0.2); }
+        .investment-page .search-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: #7f8c8d; font-size: 14px; }
+        .investment-page .filter-group select,
+        .investment-page .filter-group input[type="date"] { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 12px; background: white; cursor: pointer; height: 34px; }
+        .investment-page .filter-group select:focus,
+        .investment-page .filter-group input[type="date"]:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 2px rgba(52,152,219,0.2); }
+        .investment-page .filter-group select.active-filter,
+        .investment-page .filter-group input[type="date"].active-filter { border-color: #e67e22; background: #fef9f0; }
+        .investment-page .table-container { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 8px rgba(0,0,0,0.08); max-height: calc(100vh - 300px); overflow-x: auto; overflow-y: auto; width: 100%; }
+        .investment-page table { width: max-content; min-width: 100%; border-collapse: collapse; table-layout: auto; }
+        .investment-page th, .investment-page td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; vertical-align: middle; font-size: 12px; white-space: nowrap; }
+        .investment-page th { background: #fff8f0; font-weight: 600; color: #2c3e50; position: sticky; top: 0; z-index: 10; border-right: 1px solid #f0e0d0; border-bottom: 2px solid #f0c070; }
+        .investment-page th:last-child { border-right: none; }
+        .investment-page tr:hover { background: #fffbf5; }
+        .investment-page tr:nth-child(even) { background: #fefefe; }
+
+        /* ============================================================
+           SOCIAL MEDIA ACCOUNTS PAGE STYLES
+        ============================================================ */
+        .social-page .filters { background: white; border-radius: 8px; padding: 12px; margin-bottom: 12px; box-shadow: 0 1px 8px rgba(0,0,0,0.08); width: 100%; }
+        .social-page .filters-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .social-page .filters-header h2 { font-size: 14px; color: #2c3e50; }
+        .social-page .batch-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .social-page .filters-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; width: 100%; }
+        .social-page .filter-group { display: flex; flex-direction: column; gap: 5px; }
+        .social-page .filter-group label { font-size: 12px; font-weight: 600; color: #2c3e50; display: flex; align-items: center; gap: 5px; }
+        .social-page .search-box { position: relative; width: 100%; }
+        .social-page .search-box input { width: 100%; padding: 8px 12px 8px 32px; border: 1px solid #ddd; border-radius: 5px; font-size: 12px; background: white; height: 34px; }
+        .social-page .search-box input:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 2px rgba(52,152,219,0.2); }
+        .social-page .search-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: #7f8c8d; font-size: 14px; }
+        .social-page .search-hint { font-size: 10px; color: #95a5a6; margin-top: 2px; }
+        .social-page .filter-group select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 12px; background: white; cursor: pointer; height: 34px; }
+        .social-page .filter-group select:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 2px rgba(52,152,219,0.2); }
+        .social-page .filter-group select.active-filter { border-color: #3498db; background: #ebf5fb; }
+        .social-page .action-buttons { display: flex; gap: 8px; align-items: center; width: 100%; grid-column: span 2; margin-top: 8px; }
+        .social-page .action-btn { background: #6c8eff; color: white; border: none; padding: 8px 12px; border-radius: 5px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; height: 34px; transition: background 0.2s; width: 100%; justify-content: center; flex: 1; min-width: 150px; }
+        .social-page .action-btn:hover { background: #5a7ae6; }
+        .social-page .action-btn.update { background: #3498db; }
+        .social-page .action-btn.update:hover { background: #2980b9; }
+        .social-page .action-btn.activity { background: #a855f7; }
+        .social-page .action-btn.activity:hover { background: #9333ea; }
+        .social-page .action-btn.permanent { background: #ef4444; }
+        .social-page .action-btn.permanent:hover { background: #dc2626; }
+        .social-page .table-container { background: white; border-radius: 8px; box-shadow: 0 1px 8px rgba(0,0,0,0.08); max-height: calc(100vh - 280px); overflow-x: auto; overflow-y: auto; width: 100%; margin: 0; }
+        .social-page table { width: max-content; min-width: 100%; border-collapse: collapse; table-layout: auto; }
+        .social-page th, .social-page td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #eee; vertical-align: middle; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .social-page th { background: #f8f9fa; font-weight: 600; color: #2c3e50; position: sticky; top: 0; z-index: 10; white-space: nowrap !important; border-right: 1px solid #eee; }
+        .social-page th:last-child { border-right: none; }
+        .social-page .row-active { background-color: #bbf7d0 !important; }
+        .social-page .row-active:hover { background-color: #86efac !important; }
+        .social-page .row-block { background-color: #fecaca !important; }
+        .social-page .row-block:hover { background-color: #fca5a5 !important; }
+        .social-page .row-blocked { background-color: #fecaca !important; }
+        .social-page .row-blocked:hover { background-color: #fca5a5 !important; }
+        .social-page .row-permanent-block { background-color: #fddede !important; }
+        .social-page .row-permanent-block:hover { background-color: #fccaca !important; }
+        .social-page .row-restricted { background-color: #fef08a !important; }
+        .social-page .row-restricted:hover { background-color: #fde047 !important; }
+        .social-page .row-frozen { background-color: #f0f8fd !important; }
+        .social-page .row-frozen:hover { background-color: #d1ecf1 !important; }
+        .social-page .status-display { padding: 3px 12px !important; border-radius: 50px !important; font-size: 11px !important; font-weight: 600 !important; display: inline-block !important; white-space: nowrap !important; min-width: 60px !important; text-align: center !important; }
+        .social-page .status-active { background: #86efac !important; color: #14532d !important; border: 1px solid #4ade80 !important; }
+        .social-page .status-blocked { background: #fca5a5 !important; color: #7f1d1d !important; border: 1px solid #f87171 !important; }
+        .social-page .status-block { background: #fca5a5 !important; color: #7f1d1d !important; border: 1px solid #f87171 !important; }
+        .social-page .status-permanent-block { background: #f87171 !important; color: #5c0a0a !important; border: 1px solid #ef4444 !important; }
+        .social-page .status-restricted { background: #fcd34d !important; color: #713f12 !important; border: 1px solid #f59e0b !important; }
+        .social-page .status-frozen { background: #93c5fd !important; color: #1e3a8a !important; border: 1px solid #3b82f6 !important; }
+
+        /* ============================================================
+           SOCIAL TRACKER MODAL
+        ============================================================ */
+        .tracker-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; padding: 20px; }
+        .tracker-modal.active { display: flex; }
+        .tracker-content { background: white; border-radius: 12px; width: 100%; max-width: 860px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .tracker-header { background: #5d9cec; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #4a89dc; }
+        .tracker-header h2 { font-size: 16px; margin: 0; display: flex; align-items: center; gap: 8px; }
+        .tracker-close { background: none; border: none; color: white; font-size: 18px; cursor: pointer; padding: 5px; border-radius: 4px; }
+        .tracker-close:hover { background: rgba(255,255,255,0.2); }
+        .tracker-view-toggle { display: flex; gap: 8px; padding: 12px 20px 0; border-bottom: 1px solid #eee; background: white; flex-wrap: wrap; }
+        .tracker-toggle-btn { padding: 6px 18px; border: 2px solid #5d9cec; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; background: white; color: #5d9cec; }
+        .tracker-toggle-btn:hover { background: #eef6ff; }
+        .tracker-toggle-btn.active { background: #5d9cec; color: white; box-shadow: 0 2px 8px rgba(93,156,236,0.35); }
+        .tracker-toggle-btn.perm { border-color: #ef4444; color: #ef4444; }
+        .tracker-toggle-btn.perm:hover { background: #fff5f5; }
+        .tracker-toggle-btn.perm.active { background: #ef4444; color: white; border-color: #ef4444; box-shadow: 0 2px 8px rgba(239,68,68,0.35); }
+        .tracker-body { padding: 20px; overflow-y: auto; flex-grow: 1; }
+        .tracker-summary { background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 20px; border: 1px solid #dee2e6; }
+        .tracker-summary h3 { color: #2c3e50; font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
+        .summary-item { background: white; border-radius: 6px; padding: 10px; border: 1px solid #dee2e6; text-align: center; }
+        .summary-item .platform { font-size: 12px; color: #7f8c8d; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .summary-item .platform i { font-size: 14px; color: #5d9cec; }
+        .summary-item .count { font-size: 20px; font-weight: bold; color: #5d9cec; }
+        .summary-item .count.active-count { color: #16a34a; }
+        .summary-item .count.perm-count { color: #ef4444; }
+        .total-accounts { font-size: 14px; text-align: center; margin-top: 10px; color: #2c3e50; font-weight: 600; }
+        .total-accounts .total-count { font-size: 18px; }
+        .tracker-details { margin-top: 25px; }
+        .tracker-details h3 { color: #2c3e50; font-size: 14px; margin-bottom: 15px; display: flex; align-items: center; gap: 6px; }
+        .platform-section { background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; border: 1px solid #dee2e6; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .platform-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #eee; }
+        .platform-header h4 { font-size: 13px; color: #2c3e50; margin: 0; display: flex; align-items: center; gap: 6px; }
+        .platform-total { background: #5d9cec; color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .platform-total.perm { background: #ef4444; }
+        .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+        .status-item { display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; border-radius: 6px; border: 1px solid transparent; }
+        .status-item.status-bg-active { background: #86efac; border-color: #4ade80; }
+        .status-item.status-bg-block { background: #fca5a5; border-color: #f87171; }
+        .status-item.status-bg-restricted { background: #fcd34d; border-color: #f59e0b; }
+        .status-item.status-bg-frozen { background: #93c5fd; border-color: #3b82f6; }
+        .status-item.status-bg-permanent { background: #f87171; border-color: #ef4444; }
+        .status-item.status-bg-default { background: #f8f9fa; border-color: #dee2e6; }
+        .status-name { font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+        .status-name.color-active { color: #14532d; }
+        .status-name.color-block { color: #7f1d1d; }
+        .status-name.color-restricted { color: #713f12; }
+        .status-name.color-frozen { color: #1e3a8a; }
+        .status-name.color-permanent { color: #5c0a0a; }
+        .status-name.color-default { color: #495057; }
+        .status-count { font-size: 13px; font-weight: 700; padding: 2px 8px; border-radius: 10px; min-width: 26px; text-align: center; background: rgba(255,255,255,0.7); }
+        .status-count.count-active { color: #14532d; }
+        .status-count.count-block { color: #7f1d1d; }
+        .status-count.count-restricted { color: #713f12; }
+        .status-count.count-frozen { color: #1e3a8a; }
+        .status-count.count-permanent { color: #5c0a0a; }
+        .status-count.count-default { color: #2c3e50; }
+
+        /* ============================================================
+           SCRAPING TRACKER MODAL — CLEAN LIGHT THEME
+        ============================================================ */
+        .scraping-tracker-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; padding: 20px; }
+        .scraping-tracker-modal.active { display: flex; }
+
+        .scraping-tracker-content {
+            background: white; border-radius: 12px; width: 100%; max-width: 860px; max-height: 90vh;
+            overflow: hidden; display: flex; flex-direction: column;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .scraping-tracker-header {
+            background: #3498db; color: white; padding: 15px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .scraping-tracker-header h2 { font-size: 16px; margin: 0; display: flex; align-items: center; gap: 8px; }
+        .scraping-tracker-close { background: none; border: none; color: white; font-size: 18px; cursor: pointer; padding: 5px; border-radius: 4px; }
+        .scraping-tracker-close:hover { background: rgba(255,255,255,0.2); }
+
+        .scraping-tracker-toggle {
+            display: flex; gap: 8px; padding: 12px 20px 0; border-bottom: 1px solid #eee; background: white;
+        }
+        .scraping-tracker-toggle-btn {
+            padding: 6px 18px; border: 2px solid #3498db; border-radius: 20px;
+            font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+            background: white; color: #3498db; display: flex; align-items: center; gap: 6px;
+        }
+        .scraping-tracker-toggle-btn:hover { background: #ebf5fb; }
+        .scraping-tracker-toggle-btn.active { background: #3498db; color: white; box-shadow: 0 2px 8px rgba(52,152,219,0.35); }
+
+        .scraping-tracker-body { padding: 20px; overflow-y: auto; flex-grow: 1; background: white; }
+
+        /* Total banner */
+        .scraping-total-banner {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border-radius: 8px; padding: 14px 18px; margin-bottom: 16px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .scraping-total-banner .banner-label { color: rgba(255,255,255,0.9); font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .scraping-total-banner .banner-num { font-size: 24px; font-weight: 800; color: white; }
+
+        /* Section heading */
+        .scrap-section-title {
+            font-size: 11px; font-weight: 700; color: #7f8c8d;
+            text-transform: uppercase; letter-spacing: 1px;
+            margin: 0 0 10px; display: flex; align-items: center; gap: 8px;
+        }
+        .scrap-section-title::after { content: ''; flex: 1; height: 1px; background: #eee; }
+
+        /* Scam card */
+        .scrap-scam-card {
+            background: #f8f9fa; border-radius: 8px; padding: 12px 14px;
+            margin-bottom: 12px; border: 1px solid #e9ecef;
+        }
+        .scrap-scam-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 9px; padding-bottom: 7px; border-bottom: 1px solid #dee2e6;
+        }
+        .scrap-scam-name { font-size: 13px; font-weight: 700; color: #2c3e50; display: flex; align-items: center; gap: 7px; }
+        .scrap-scam-name i { color: #3498db; font-size: 13px; }
+        .scrap-scam-total { background: #3498db; color: white; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+
+        /* Platform pills inside scam card */
+        .scrap-platform-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+        .scrap-pill {
+            display: flex; align-items: center; gap: 4px;
+            padding: 3px 9px; border-radius: 20px;
+            font-size: 11px; font-weight: 600; border: 1px solid;
+        }
+        .scrap-pill.pill-telegram  { background: #e3f2fd; color: #0d47a1; border-color: #90caf9; }
+        .scrap-pill.pill-whatsapp  { background: #e8f5e9; color: #1b5e20; border-color: #a5d6a7; }
+        .scrap-pill.pill-facebook  { background: #e8eaf6; color: #1a237e; border-color: #9fa8da; }
+        .scrap-pill.pill-instagram { background: #fce4ec; color: #880e4f; border-color: #f48fb1; }
+        .scrap-pill.pill-youtube   { background: #ffebee; color: #b71c1c; border-color: #ef9a9a; }
+        .scrap-pill.pill-threads   { background: #f3e5f5; color: #4a148c; border-color: #ce93d8; }
+        .scrap-pill.pill-x         { background: #f5f5f5; color: #212121; border-color: #bdbdbd; }
+        .scrap-pill.pill-unknown   { background: #f5f5f5; color: #616161; border-color: #bdbdbd; }
+        .scrap-pill.pill-default   { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
+        .scrap-pill-count { background: rgba(0,0,0,0.08); padding: 0px 5px; border-radius: 8px; font-size: 11px; }
+
+        /* Platform-only view */
+        .scrap-stat-card {
+            background: white; border-radius: 8px; padding: 10px 14px;
+            border: 1px solid #dee2e6; display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 8px; transition: background 0.15s;
+        }
+        .scrap-stat-card:hover { background: #f8f9fa; }
+        .scrap-stat-label { font-size: 13px; color: #2c3e50; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .scrap-stat-label i { font-size: 14px; color: #3498db; }
+        .scrap-stat-count { background: #3498db; color: white; padding: 3px 12px; border-radius: 12px; font-size: 13px; font-weight: 700; min-width: 40px; text-align: center; }
+
+        .tracker-loading { text-align: center; padding: 40px 20px; color: #7f8c8d; }
+        .tracker-loading .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #3498db; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* ============================================================
+           ACTIVITY & PERMANENT BLOCK MODALS
+        ============================================================ */
+        .activity-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; padding: 20px; }
+        .activity-modal.active { display: flex; }
+        .activity-content { background: white; border-radius: 12px; width: 100%; max-width: 900px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .activity-header { background: #a855f7; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .activity-header h2 { font-size: 16px; margin: 0; display: flex; align-items: center; gap: 8px; }
+        .activity-close { background: none; border: none; color: white; font-size: 18px; cursor: pointer; padding: 5px; border-radius: 4px; }
+        .activity-close:hover { background: rgba(255,255,255,0.2); }
+        .activity-body { padding: 20px; overflow-y: auto; flex-grow: 1; }
+        .permanent-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; padding: 20px; }
+        .permanent-modal.active { display: flex; }
+        .permanent-content { background: white; border-radius: 12px; width: 100%; max-width: 1200px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .permanent-header { background: #ef4444; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .permanent-header h2 { font-size: 16px; margin: 0; display: flex; align-items: center; gap: 8px; }
+        .permanent-close { background: none; border: none; color: white; font-size: 18px; cursor: pointer; padding: 5px; border-radius: 4px; }
+        .permanent-close:hover { background: rgba(255,255,255,0.2); }
+        .permanent-body { padding: 20px; overflow-y: auto; flex-grow: 1; }
+        .permanent-stats { background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 20px; border: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center; }
+        .permanent-stats h3 { color: #2c3e50; font-size: 14px; margin: 0; display: flex; align-items: center; gap: 8px; }
+        .permanent-count { font-size: 20px; font-weight: bold; color: #ef4444; }
+        .activity-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .activity-table th { background: #f8f9fa; padding: 10px 12px; text-align: left; font-weight: 600; color: #2c3e50; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 10; white-space: nowrap; }
+        .activity-table td { padding: 8px 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+        .activity-table tr:hover { background: #f8fafc; }
+        .confirmation-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; padding: 20px; }
+        .confirmation-modal.active { display: flex; }
+        .confirmation-content { background: white; border-radius: 12px; width: 100%; max-width: 400px; padding: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); text-align: center; }
+        .confirmation-icon { font-size: 48px; color: #e74c3c; margin-bottom: 15px; }
+        .confirmation-content h3 { color: #2c3e50; font-size: 18px; margin-bottom: 10px; }
+        .confirmation-content p { color: #7f8c8d; font-size: 14px; margin-bottom: 20px; line-height: 1.5; }
+        .confirmation-buttons { display: flex; justify-content: center; gap: 15px; margin-top: 25px; }
+        .confirmation-btn { padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; min-width: 100px; justify-content: center; }
+        .confirmation-btn.confirm { background: #e74c3c; color: white; }
+        .confirmation-btn.confirm:hover { background: #c0392b; }
+        .confirmation-btn.cancel { background: #f8f9fa; color: #2c3e50; border: 1px solid #dee2e6; }
+        .confirmation-btn.cancel:hover { background: #e9ecef; }
+
+        /* Sheet Maker */
+        .sheet-maker-compact { background: white; border-radius: 8px; padding: 12px; box-shadow: 0 1px 8px rgba(0,0,0,0.08); width: 100%; margin-top: 10px; }
+        .sheet-maker-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #eee; }
+        .sheet-maker-header h2 { font-size: 14px; color: #2c3e50; margin: 0; }
+        .template-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .template-btn { padding: 5px 10px; background: #3498db; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 5px; height: 30px; }
+        .template-btn:hover:not(:disabled) { background: #2980b9; }
+        .template-btn:disabled { background: #95a5a6; cursor: not-allowed; }
+        .template-stats { display: flex; align-items: center; gap: 8px; background: #f8f9fa; padding: 5px 10px; border-radius: 4px; border: 1px solid #dee2e6; }
+        .stat-badge { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #2c3e50; white-space: nowrap; }
+        .stat-value { font-weight: bold; color: #2ecc71; }
+        .stat-value.upi { color: #3498db; }
+        .stat-value.bank { color: #e67e22; }
+        .sheet-maker-row { display: grid; grid-template-columns: 1.5fr 1.5fr 1fr 1fr; gap: 8px; align-items: start; width: 100%; }
+        .sheet-maker-group { display: flex; flex-direction: column; gap: 4px; }
+        .sheet-maker-group label { font-size: 12px; font-weight: 600; color: #2c3e50; display: flex; align-items: center; gap: 5px; margin-bottom: 0; }
+        .sheet-maker-group label i { color: #3498db; font-size: 13px; }
+        .sheet-maker-select { width: 100%; padding: 7px 9px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; background: white; cursor: pointer; height: 34px; }
+        .headers-display { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 6px; margin-top: 4px; display: none; font-size: 11px; }
+        .headers-title { font-size: 10px; color: #666; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
+        .headers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 3px; max-height: 70px; overflow-y: auto; }
+        .header-item { background: white; border: 1px solid #dee2e6; border-radius: 3px; padding: 3px 5px; font-size: 10px; color: #495057; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+        .file-upload-compact { border: 2px dashed #dee2e6; border-radius: 4px; padding: 8px; cursor: pointer; background: white; transition: all 0.2s; text-align: center; min-height: 54px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .file-upload-compact:hover { border-color: #3498db; background: #f8fafc; }
+        .file-upload-compact i { font-size: 16px; color: #3498db; margin-bottom: 3px; }
+        .file-name { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; margin-bottom: 1px; }
+        .file-info { color: #6c757d; font-size: 9px; line-height: 1.2; text-align: center; }
+        .preview-btn { width: 100%; padding: 7px 9px; background: #f8f9fa; color: #495057; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; height: 34px; }
+        .preview-btn:hover:not(:disabled) { background: #e9ecef; border-color: #3498db; color: #3498db; }
+        .preview-btn:disabled { background: #f8f9fa; color: #adb5bd; cursor: not-allowed; }
+        .generate-btn-compact { width: 100%; padding: 7px 9px; background: #2ecc71; color: white; border: none; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; height: 34px; }
+        .generate-btn-compact:hover:not(:disabled) { background: #27ae60; }
+        .generate-btn-compact:disabled { background: #95a5a6; cursor: not-allowed; }
+        .preview-section { background: white; border-radius: 8px; padding: 12px; margin-top: 12px; width: 100%; box-shadow: 0 1px 8px rgba(0,0,0,0.08); height: 70vh; overflow: hidden; display: none; flex-direction: column; }
+        .preview-section.show { display: flex; flex-direction: column; height: 70vh; }
+        .preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #eee; flex-shrink: 0; }
+        .preview-header h4 { color: #2c3e50; font-size: 13px; display: flex; align-items: center; gap: 6px; margin: 0; }
+        .preview-table-container { background: white; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex-grow: 1; overflow: auto; height: calc(100% - 40px); }
+        .preview-table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: 11px; table-layout: auto; }
+        .preview-table th { background: #f8f9fa; padding: 6px 10px; text-align: left; font-weight: 600; color: #2c3e50; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 10; white-space: nowrap; min-width: 110px; max-width: 200px; }
+        .preview-table td { padding: 4px 10px; border-bottom: 1px solid #eee; vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 110px; max-width: 200px; }
+        .preview-table .na-cell { color: #95a5a6; font-style: italic; font-size: 10px; }
+        .preview-table tr:hover td { background: #f8fafc; }
+
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 12px; padding: 10px; background: white; border-radius: 8px; box-shadow: 0 1px 8px rgba(0,0,0,0.08); width: 100%; }
+        .pagination-btn { padding: 5px 10px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 3px; height: 30px; }
+        .pagination-btn:hover:not(:disabled) { background: #2980b9; }
+        .pagination-btn:disabled { background: #bdc3c7; cursor: not-allowed; }
+        .pagination-info { color: #7f8c8d; font-size: 12px; }
+        .flash-message { position: fixed; top: 12px; right: 12px; background: white; padding: 10px 14px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-left: 4px solid #2ecc71; display: flex; align-items: center; gap: 6px; animation: slideIn 0.3s ease; z-index: 1001; max-width: 300px; font-size: 13px; }
+        .flash-message.error { border-left-color: #e74c3c; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .toast { position: fixed; bottom: 20px; right: 12px; background: #2c3e50; color: white; padding: 8px 16px; border-radius: 6px; font-size: 12px; animation: fadeInUp 0.3s; z-index: 1001; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+        .toast.error { background: #e74c3c; }
+        .toast.success { background: #2ecc71; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .loading-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.9); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #3498db; border-radius: 50%; width: 35px; height: 35px; animation: spin 1s linear infinite; }
+
+        .copy-btn { background: none; border: none; color: #3498db; cursor: pointer; padding: 2px 5px; border-radius: 3px; transition: all 0.2s; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; vertical-align: middle; }
+        .copy-btn:hover { background: #f0f7ff; transform: scale(1.1); }
+        .url-link { color: #3498db; text-decoration: none; word-break: break-all; font-size: 12px; display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+        .url-link:hover { text-decoration: underline; }
+        .field-container { display: flex; align-items: center; gap: 5px; }
+        .text-content { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+        .platform-badge { background: #e3f2fd; color: #1976d2; padding: 2px 5px; border-radius: 3px; font-size: 10px; font-weight: 500; white-space: nowrap; }
+        .scam-type { background: #ffebee; color: #c62828; padding: 2px 5px; border-radius: 3px; font-size: 10px; font-weight: 500; white-space: nowrap; }
+        .inv-badge { background: #fff3e0; color: #e65100; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; white-space: nowrap; border: 1px solid #ffcc02; }
+        .wallet-badge { background: #e8f5e9; color: #2e7d32; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+
+        /* Investment Tracker Modal */
+        .inv-tracker-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; padding: 20px; }
+        .inv-tracker-modal.active { display: flex; }
+        .inv-tracker-content { background: white; border-radius: 12px; width: 100%; max-width: 960px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .inv-tracker-header { background: #5d9cec; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .inv-tracker-header h2 { font-size: 16px; margin: 0; display: flex; align-items: center; gap: 8px; }
+        .inv-tracker-close { background: none; border: none; color: white; font-size: 18px; cursor: pointer; padding: 5px; border-radius: 4px; }
+        .inv-tracker-close:hover { background: rgba(255,255,255,0.2); }
+        .inv-tracker-toggle { display: flex; gap: 8px; padding: 12px 20px 0; border-bottom: 1px solid #eee; background: white; flex-wrap: wrap; align-items: center; }
+        .inv-tracker-btn { padding: 6px 16px; border: 2px solid #5d9cec; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; background: white; color: #5d9cec; }
+        .inv-tracker-btn:hover { background: #eef6ff; }
+        .inv-tracker-btn.active { background: #5d9cec; color: white; box-shadow: 0 2px 8px rgba(93,156,236,0.35); }
+        .inv-date-filter { display: flex; align-items: center; gap: 6px; margin-left: auto; padding-bottom: 10px; }
+        .inv-date-filter label { font-size: 11px; font-weight: 600; color: #7f8c8d; }
+        .inv-date-filter input[type="date"] { padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; height: 28px; }
+        .inv-date-filter button { padding: 4px 10px; background: #5d9cec; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; height: 28px; }
+        .inv-date-filter button:hover { background: #4a89dc; }
+        .inv-tracker-body { padding: 20px; overflow-y: auto; flex-grow: 1; }
+        .inv-total-banner { background: linear-gradient(135deg, #5d9cec, #4a89dc); border-radius: 8px; padding: 12px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .inv-total-banner .banner-label { color: rgba(255,255,255,0.9); font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .inv-total-banner .banner-num { font-size: 24px; font-weight: 800; color: white; }
+        .inv-mini-stats { display: flex; gap: 10px; flex-wrap: wrap; }
+        .inv-mini-stat { background: rgba(255,255,255,0.2); border-radius: 6px; padding: 6px 12px; text-align: center; }
+        .inv-mini-stat .mini-label { font-size: 10px; color: rgba(255,255,255,0.85); display: block; margin-bottom: 2px; }
+        .inv-mini-stat .mini-num { font-size: 16px; font-weight: 800; color: white; }
+        .inv-user-card { background: #f8f9fa; border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; border: 1px solid #e9ecef; }
+        .inv-user-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #dee2e6; }
+        .inv-user-name { font-size: 13px; font-weight: 700; color: #2c3e50; display: flex; align-items: center; gap: 6px; }
+        .inv-user-name i { color: #5d9cec; }
+        .inv-user-total { background: #5d9cec; color: white; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+        .inv-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+        .inv-pill { display: flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; border: 1px solid; }
+        .inv-pill-web      { background: #e3f2fd; color: #0d47a1; border-color: #90caf9; }
+        .inv-pill-telegram { background: #e3f2fd; color: #1a237e; border-color: #7986cb; }
+        .inv-pill-whatsapp { background: #e8f5e9; color: #1b5e20; border-color: #a5d6a7; }
+        .inv-pill-facebook { background: #e8eaf6; color: #1a237e; border-color: #9fa8da; }
+        .inv-pill-instagram{ background: #fce4ec; color: #880e4f; border-color: #f48fb1; }
+        .inv-pill-youtube  { background: #ffebee; color: #b71c1c; border-color: #ef9a9a; }
+        .inv-pill-x        { background: #f5f5f5; color: #212121; border-color: #bdbdbd; }
+        .inv-pill-thread   { background: #f3e5f5; color: #4a148c; border-color: #ce93d8; }
+        .inv-pill-default  { background: #f5f5f5; color: #616161; border-color: #bdbdbd; }
+        .inv-pill-count    { background: rgba(0,0,0,0.1); padding: 0 5px; border-radius: 8px; }
+        .inv-scam-row { background: white; border-radius: 8px; padding: 10px 14px; border: 1px solid #dee2e6; margin-bottom: 8px; }
+        .inv-scam-row:hover { background: #eef6ff; }
+        .inv-scam-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .inv-scam-label { font-size: 13px; color: #2c3e50; font-weight: 700; }
+        .inv-scam-total { background: #5d9cec; color: white; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+        .inv-section-title { font-size: 11px; font-weight: 700; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 10px; display: flex; align-items: center; gap: 8px; }
+        .inv-section-title::after { content: ''; flex: 1; height: 1px; background: #eee; }
+        .empty-state { text-align: center; padding: 30px 12px; color: #7f8c8d; }
+        .empty-state i { font-size: 28px; margin-bottom: 8px; color: #ddd; }
+
+        /* ============================================================
+           USER ACTIVITY LOG MODAL
+        ============================================================ */
+        .user-activity-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); z-index: 2000; justify-content: center; align-items: center; padding: 20px; }
+        .user-activity-modal.active { display: flex; }
+        .ual-content { background: white; border-radius: 12px; width: 100%; max-width: 1100px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.25); }
+        .ual-header { background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .ual-header h2 { font-size: 16px; margin: 0; display: flex; align-items: center; gap: 8px; }
+        .ual-close { background: none; border: none; color: white; font-size: 18px; cursor: pointer; padding: 5px; border-radius: 4px; }
+        .ual-close:hover { background: rgba(255,255,255,0.2); }
+        .ual-filters { display: flex; gap: 10px; padding: 12px 16px; background: #f8f9fa; border-bottom: 1px solid #e9ecef; flex-wrap: wrap; align-items: center; flex-shrink: 0; }
+        .ual-search-wrap { position: relative; display: flex; align-items: center; }
+        .ual-search-wrap i { position: absolute; left: 10px; color: #9ca3af; font-size: 13px; pointer-events: none; }
+        .ual-search-wrap input { padding: 7px 12px 7px 32px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; width: 260px; height: 34px; outline: none; }
+        .ual-search-wrap input:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.15); }
+        .ual-filters select { padding: 7px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; background: white; cursor: pointer; height: 34px; min-width: 190px; outline: none; }
+        .ual-filters select:focus { border-color: #6366f1; }
+        .ual-clear-btn { padding: 6px 12px; background: #e74c3c; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; height: 34px; display: flex; align-items: center; gap: 5px; }
+        .ual-clear-btn:hover { background: #c0392b; }
+        .ual-stats { padding: 8px 16px; background: #eef2ff; border-bottom: 1px solid #c7d2fe; font-size: 12px; color: #4338ca; font-weight: 600; flex-shrink: 0; }
+        .ual-body { overflow-y: auto; flex-grow: 1; }
+        .ual-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 900px; }
+        .ual-table thead th { background: #f8f9fa; padding: 10px 12px; text-align: left; font-weight: 600; color: #2c3e50; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 5; white-space: nowrap; }
+        .ual-table tbody td { padding: 9px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+        .ual-table tbody tr:hover { background: #f8f9ff; }
+        .ual-badge { padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+        .ual-badge-update { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+        .ual-badge-import { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+        .ual-page-badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #f3f4f6; color: #374151; white-space: nowrap; }
+        .ual-val-change { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+        .ual-old { background: #fee2e2; color: #991b1b; padding: 1px 6px; border-radius: 3px; font-size: 11px; text-decoration: line-through; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ual-new { background: #dcfce7; color: #166534; padding: 1px 6px; border-radius: 3px; font-size: 11px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ual-arrow { color: #9ca3af; font-size: 10px; }
+        .ual-empty { text-align: center; padding: 60px 20px; color: #9ca3af; }
+        .ual-empty i { font-size: 40px; display: block; margin-bottom: 12px; color: #e5e7eb; }
+
+        @media (max-width: 992px) { .sheet-maker-row { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 768px) { .container { padding-top: 120px; padding-bottom: 20px; } .header { flex-direction: column; gap: 10px; } .header-controls { width: 100%; } .sheet-maker-row { grid-template-columns: 1fr; } .social-page .filters-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
+
+    <!-- Social Tracker Modal -->
+    <div class="tracker-modal" id="trackerModal">
+        <div class="tracker-content">
+            <div class="tracker-header">
+                <h2><i class="fas fa-chart-line"></i> Social Media Accounts Tracker</h2>
+                <button class="tracker-close" onclick="closeTracker()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="tracker-view-toggle">
+                <button class="tracker-toggle-btn active" id="toggleActiveBtn" onclick="setTrackerView('active')"><i class="fas fa-check-circle"></i> Active</button>
+                <button class="tracker-toggle-btn" id="toggleTotalBtn" onclick="setTrackerView('total')"><i class="fas fa-list-ol"></i> Total Counts</button>
+                <button class="tracker-toggle-btn perm" id="togglePermBtn" onclick="setTrackerView('perm')"><i class="fas fa-ban"></i> Permanent Block Accounts</button>
+            </div>
+            <div class="tracker-body" id="trackerBody">
+                <div class="tracker-loading"><div class="spinner"></div><p>Loading tracker statistics...</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Investment Tracker Modal -->
+    <div class="inv-tracker-modal" id="invTrackerModal">
+        <div class="inv-tracker-content">
+            <div class="inv-tracker-header">
+                <h2><i class="fas fa-chart-bar"></i> BS Investment Scam Tracker</h2>
+                <button class="inv-tracker-close" onclick="closeInvestmentTracker()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="inv-tracker-toggle">
+                <button class="inv-tracker-btn active" id="invBtn1" onclick="setInvView('users')"><i class="fas fa-users"></i> Users Count</button>
+                <button class="inv-tracker-btn" id="invBtn2" onclick="setInvView('scamtype')"><i class="fas fa-exclamation-triangle"></i> Scam Type Counts</button>
+                <button class="inv-tracker-btn" id="invBtn3" onclick="setInvView('total')"><i class="fas fa-chart-pie"></i> Total Counts</button>
+                <div class="inv-date-filter">
+                    <label><i class="fas fa-calendar-alt"></i></label>
+                    <input type="date" id="invTrackerFrom" placeholder="From">
+                    <span style="font-size:11px;color:#7f8c8d;">to</span>
+                    <input type="date" id="invTrackerTo" placeholder="To">
+                    <button onclick="loadInvTrackerData()"><i class="fas fa-search"></i> Apply</button>
+                    <button onclick="clearInvTrackerDates()" style="background:#95a5a6;"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            <div class="inv-tracker-body" id="invTrackerBody">
+                <div class="tracker-loading"><div class="spinner"></div><p>Loading tracker statistics...</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scraping Tracker Modal -->
+    <div class="scraping-tracker-modal" id="scrapingTrackerModal">
+        <div class="scraping-tracker-content">
+            <div class="scraping-tracker-header">
+                <h2><i class="fas fa-chart-bar"></i> Scraping Data Tracker</h2>
+                <button class="scraping-tracker-close" onclick="closeScrapingTracker()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="scraping-tracker-toggle">
+                <button class="scraping-tracker-toggle-btn active" id="scrapToggleScam" onclick="setScrapingView('scam')">
+                    <i class="fas fa-exclamation-triangle"></i> By Scam Type &amp; Platform
+                </button>
+                <button class="scraping-tracker-toggle-btn" id="scrapTogglePlatform" onclick="setScrapingView('platform')">
+                    <i class="fas fa-mobile-alt"></i> By Platform Only
+                </button>
+            </div>
+            <div class="scraping-tracker-body" id="scrapingTrackerBody">
+                <div class="tracker-loading"><div class="spinner"></div><p>Loading statistics...</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Log Modal -->
+    <div class="activity-modal" id="activityModal">
+        <div class="activity-content">
+            <div class="activity-header">
+                <h2><i class="fas fa-history"></i> Activity Log</h2>
+                <button class="activity-close" onclick="closeActivityLog()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="activity-body" id="activityBody">
+                <div class="tracker-loading"><div class="spinner"></div><p>Loading activity log...</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Permanent Block Accounts Modal -->
+    <div class="permanent-modal" id="permanentModal">
+        <div class="permanent-content">
+            <div class="permanent-header">
+                <h2><i class="fas fa-ban"></i> Permanent Block Accounts</h2>
+                <button class="permanent-close" onclick="closePermanentAccounts()"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="padding:10px 20px 0; background:white; display:flex; gap:10px; align-items:center; border-bottom:1px solid #eee;">
+                <label style="font-size:12px;font-weight:600;color:#2c3e50;white-space:nowrap;"><i class="fas fa-mobile-alt"></i> Platform:</label>
+                <select id="permPlatformFilter" onchange="loadPermanentAccounts(document.getElementById('permSearchInput')?.value||'', this.value)" style="padding:5px 10px;border:1px solid #ddd;border-radius:5px;font-size:12px;height:30px;background:white;cursor:pointer;">
+                    <option value="">All Platforms</option>
+                    <option value="Facebook">Facebook</option>
+                    <option value="Instagram">Instagram</option>
+                    <option value="Telegram">Telegram</option>
+                    <option value="WhatsApp">WhatsApp</option>
+                    <option value="Amazon">Amazon</option>
+                    <option value="Gmail Accounts">Gmail Accounts</option>
+                    <option value="Total Numbers">Total Numbers</option>
+                </select>
+            </div>
+            <div class="permanent-body" id="permanentBody">
+                <div class="tracker-loading"><div class="spinner"></div><p>Loading...</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="confirmation-modal" id="confirmationModal">
+        <div class="confirmation-content">
+            <div class="confirmation-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3 id="confirmationTitle">Are you sure?</h3>
+            <p id="confirmationMessage">This action cannot be undone.</p>
+            <div class="confirmation-buttons">
+                <button class="confirmation-btn cancel" onclick="cancelAction()"><i class="fas fa-times"></i> Cancel</button>
+                <button class="confirmation-btn confirm" onclick="confirmAction()"><i class="fas fa-check"></i> Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ★ CHANGE 3: User Activity Log Modal ★ -->
+    <div class="user-activity-modal" id="userActivityLogModal">
+        <div class="ual-content">
+            <div class="ual-header">
+                <h2><i class="fas fa-history"></i> User's Activity Log</h2>
+                <button class="ual-close" onclick="closeUserActivityLog()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="ual-filters">
+                <div class="ual-search-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="ualSearch" placeholder="Search by user, field, value, record ID..." oninput="filterUAL()">
+                </div>
+                <select id="ualPageFilter" onchange="filterUAL()">
+                    <option value="">All Pages</option>
+                    <option value="social_media_accounts">Social Media Accounts</option>
+                    <option value="scrapping_data">Scrapping Data</option>
+                    <option value="BS_Investment_Scam">BS Investment Scam</option>
+                </select>
+                <select id="ualActionFilter" onchange="filterUAL()">
+                    <option value="">All Actions</option>
+                    <option value="field_update">Field Updates</option>
+                    <option value="import">Imports</option>
+                </select>
+                <button class="ual-clear-btn" onclick="clearUAL()"><i class="fas fa-times"></i> Clear</button>
+            </div>
+            <div class="ual-stats" id="ualStats"><i class="fas fa-list"></i> Loading...</div>
+            <div class="ual-body" id="ualBody">
+                <div class="tracker-loading"><div class="spinner"></div><p>Loading activity log...</p></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="fixed-header">
+        <div class="header">
+            <div class="logo">
+                <div class="logo-title-row">
+                    <h1>Scam Intelligence Dashboard</h1>
+                    <span class="header-username"><i class="fas fa-user-circle" style="color:#3498db;font-size:11px;"></i> {{ display_name }}</span>
+                </div>
+                <p id="pageSubtitle">
+                    {% if page_type == 'scraping' %}Scrapping Data Management &amp; Filtering
+                    {% elif page_type == 'sheet' %}Report Generation Tool
+                    {% elif page_type == 'social' %}Social Media Accounts Management
+                    {% elif page_type == 'investment' %}BS Investment Scam — Data View
+                    {% else %}Dashboard{% endif %}
+                </p>
+            </div>
+            <div class="header-controls">
+                <div class="page-selector">
+                    <label><i class="fas fa-columns"></i> Page:</label>
+                    <select class="page-select" onchange="changePage(this.value)">
+                        {% if 'scraping' in allowed_pages %}
+                        <option value="scraping" {% if page_type == 'scraping' %}selected{% endif %}>Scraping Data</option>
+                        {% endif %}
+                        {% if 'sheet' in allowed_pages %}
+                        <option value="sheet" {% if page_type == 'sheet' %}selected{% endif %}>Sheet Maker</option>
+                        {% endif %}
+                        {% if 'social' in allowed_pages %}
+                        <option value="social" {% if page_type == 'social' %}selected{% endif %}>Social Media Accounts</option>
+                        {% endif %}
+                        {% if 'investment' in allowed_pages %}
+                        <option value="investment" {% if page_type == 'investment' %}selected{% endif %}>BS Investment Scam</option>
+                        {% endif %}
+                    </select>
+                </div>
+                <div class="header-actions">
+                    {% if page_type == 'scraping' %}
+                    <form action="/export" method="GET" style="display:inline;">
+                        <input type="hidden" name="search" value="{{ search_query }}">
+                        <input type="hidden" name="scam_type" value="{{ scam_filter }}">
+                        <input type="hidden" name="platform" value="{{ platform_filter }}">
+                        <input type="hidden" name="date_from" value="{{ date_from }}">
+                        <input type="hidden" name="date_to" value="{{ date_to }}">
+                        <button type="submit" class="btn btn-primary" onclick="showLoading()"><i class="fas fa-file-export"></i> Export</button>
+                    </form>
+                    <button type="button" class="btn btn-warning" onclick="showScrapingTracker()"><i class="fas fa-chart-bar"></i> Tracker</button>
+                    <form id="importForm" action="/upload" method="POST" enctype="multipart/form-data" style="display:inline;">
+                        <input type="file" name="file" id="fileInput" style="display:none;" accept=".csv,.xlsx,.xls,.xlsm,.xlsb,.ods">
+                        <button type="button" class="btn btn-success" onclick="document.getElementById('fileInput').click()"><i class="fas fa-file-import"></i> Import</button>
+                    </form>
+                    {% elif page_type == 'social' %}
+                    <form id="importFormSocial" action="/social-import" method="POST" enctype="multipart/form-data" style="display:inline;">
+                        <input type="file" name="file" id="fileInputSocial" style="display:none;" accept=".csv,.xlsx,.xls,.xlsm,.xlsb,.ods">
+                        <button type="button" class="btn btn-success" onclick="document.getElementById('fileInputSocial').click()"><i class="fas fa-file-import"></i> Import</button>
+                    </form>
+                    <button type="button" class="btn btn-warning" onclick="showTracker()"><i class="fas fa-chart-line"></i> Tracker</button>
+                    <form action="/social-export" method="GET" style="display:inline;">
+                        <input type="hidden" name="social_search" value="{{ social_search }}">
+                        <input type="hidden" name="social_platform" value="{{ social_platform }}">
+                        <button type="submit" class="btn btn-primary" onclick="showLoading()"><i class="fas fa-file-export"></i> Export</button>
+                    </form>
+                    {% elif page_type == 'investment' %}
+                    <button type="button" class="btn btn-warning" onclick="showInvestmentTracker()"><i class="fas fa-chart-bar"></i> Tracker</button>
+                    <form action="/investment-export" method="GET" style="display:inline;">
+                        <input type="hidden" name="inv_search" value="{{ inv_search }}">
+                        <input type="hidden" name="inv_scam_type" value="{{ inv_scam_type }}">
+                        <input type="hidden" name="inv_search_for" value="{{ inv_search_for }}">
+                        <input type="hidden" name="inv_wallet" value="{{ inv_wallet }}">
+                        <input type="hidden" name="inv_date_from" value="{{ inv_date_from }}">
+                        <input type="hidden" name="inv_date_to" value="{{ inv_date_to }}">
+                        <button type="submit" class="btn btn-primary" onclick="showLoading()"><i class="fas fa-file-export"></i> Export</button>
+                    </form>
+                    {% endif %}
+                    <button class="btn btn-outline" onclick="window.location.reload()"><i class="fas fa-sync-alt"></i> Refresh</button>
+                    <!-- ★ CHANGE 2: User Activity Log button — before logout ★ -->
+                    {% if can_view_activity_log %}
+                    <button type="button" class="btn" style="background:#6366f1;color:white;gap:5px;" onclick="showUserActivityLog()">
+                        <i class="fas fa-history"></i> User's Activity Log
+                    </button>
+                    {% endif %}
+                    <div style="display:flex;align-items:center;gap:6px;margin-left:4px;padding-left:8px;border-left:1px solid #e2e8f0;">
+                        <a href="/logout" class="btn" style="background:#e74c3c;color:white;padding:5px 10px;height:30px;font-size:11px;"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+
+        <!-- ===== SCRAPING DATA PAGE ===== -->
+        {% if 'scraping' in allowed_pages %}
+        <div class="page-content scraping-page {% if page_type == 'scraping' %}active{% endif %}">
+            <div class="filters">
+                <div class="filters-header">
+                    <h2><i class="fas fa-filter"></i> Filter Data</h2>
+                    <button type="button" class="clear-filters" onclick="clearFilters()"><i class="fas fa-times"></i> Clear Filters</button>
+                </div>
+                <form method="GET" action="/" class="filters-grid" id="filterForm">
+                    <input type="hidden" name="page" value="scraping">
+                    <div class="filter-group">
+                        <label><i class="fas fa-search"></i> Search</label>
+                        <div class="search-box">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" name="search" value="{{ search_query }}" placeholder="Search by name, URL, chat number..." onkeyup="if(event.keyCode===13) this.form.submit()">
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <label><i class="fas fa-mobile-alt"></i> Platform</label>
+                        <select name="platform" onchange="this.form.submit()">
+                            <option value="">All Platforms</option>
+                            {% for platform in platform_options %}
+                            <option value="{{ platform }}" {% if platform_filter == platform %}selected{% endif %}>{{ platform }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label><i class="fas fa-exclamation-triangle"></i> Scam Type</label>
+                        <select name="scam_type" onchange="this.form.submit()">
+                            <option value="">All Scam Types</option>
+                            {% for scam_type in scam_type_options %}
+                            <option value="{{ scam_type }}" {% if scam_filter == scam_type %}selected{% endif %}>{{ scam_type }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label><i class="fas fa-calendar-alt"></i> Date Range</label>
+                        <div class="date-range-group">
+                            <input type="date" name="date_from" value="{{ date_from }}" onchange="this.form.submit()" class="{% if date_from %}active-filter{% endif %}" title="From date">
+                            <span class="date-range-sep">to</span>
+                            <input type="date" name="date_to" value="{{ date_to }}" onchange="this.form.submit()" class="{% if date_to %}active-filter{% endif %}" title="To date">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Platform</th>
+                            <th>Post URL</th>
+                            <th>Chat Number</th>
+                            <th>Group Name</th>
+                            <th>Scam Type</th>
+                            <th>Inserted Date</th>
+                            <th>Screenshot</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if items %}
+                        {% for item in items %}
+                        <tr>
+                            <td><strong style="color:#2c3e50;">#{{ item["id"] }}</strong></td>
+                            <td>
+                                {% if item.get("name") and item["name"] not in ["NA","N/A",""] %}
+                                <span class="text-content" title="{{ item['name'] }}">{{ item['name'][:30] }}{% if item['name']|length > 30 %}...{% endif %}</span>
+                                {% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}
+                            </td>
+                            <td>{% if item["platform"] and item["platform"] != "NA" %}<span class="platform-badge">{{ item["platform"] }}</span>{% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}</td>
+                            <td>
+                                <div class="field-container">
+                                    {% if item["post_url"] and item["post_url"] != "NA" %}
+                                    <a href="{{ item['post_url'] }}" target="_blank" class="url-link" title="{{ item['post_url'] }}">{{ item['post_url'][:35] }}{% if item['post_url']|length > 35 %}...{% endif %}</a>
+                                    <button class="copy-btn" onclick="copyToClipboard('{{ item['post_url']|escape }}', 'Post URL')" title="Copy URL"><i class="fas fa-copy"></i></button>
+                                    {% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="field-container">
+                                    {% if item["chat_number"] and item["chat_number"] != "NA" %}
+                                    <span class="text-content">{{ item["chat_number"] }}</span>
+                                    <button class="copy-btn" onclick="copyToClipboard('{{ item['chat_number']|escape }}', 'Chat Number')"><i class="fas fa-copy"></i></button>
+                                    {% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="field-container">
+                                    {% if item["group_name"] and item["group_name"] != "NA" %}
+                                    <span class="text-content">{{ item["group_name"] }}</span>
+                                    <button class="copy-btn" onclick="copyToClipboard('{{ item['group_name']|escape }}', 'Group Name')"><i class="fas fa-copy"></i></button>
+                                    {% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}
+                                </div>
+                            </td>
+                            <td>{% if item["scam_type"] and item["scam_type"] != "NA" %}<span class="scam-type">{{ item["scam_type"] }}</span>{% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}</td>
+                            <td>
+                                {% if item.get("inserted_date") and item["inserted_date"] not in ["NA","N/A",""] %}
+                                <span style="font-size:11px;color:#2c3e50;font-weight:600;">{{ item["inserted_date"] }}</span>
+                                {% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}
+                            </td>
+                            <td>{% if item["screenshot"] and item["screenshot"] != "NA" %}<a href="{{ item['screenshot'] }}" target="_blank" title="View Screenshot"><i class="fas fa-eye"></i></a>{% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr><td colspan="9"><div class="empty-state"><i class="fas fa-database"></i><h3>No records found</h3><p>Try adjusting your search filters or import some data</p><button class="btn btn-primary" style="margin-top:10px;" onclick="clearFilters()"><i class="fas fa-times"></i> Clear All Filters</button></div></td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            {% if total_pages is defined and total_pages > 1 %}
+            <div class="pagination">
+                <button class="pagination-btn" onclick="goToPage({{ page_num - 1 }})" {% if page_num <= 1 %}disabled{% endif %}><i class="fas fa-chevron-left"></i> Previous</button>
+                <span class="pagination-info">Page {{ page_num }} of {{ total_pages }} ({{ total_rows }} total)</span>
+                <button class="pagination-btn" onclick="goToPage({{ page_num + 1 }})" {% if page_num >= total_pages %}disabled{% endif %}>Next <i class="fas fa-chevron-right"></i></button>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- ===== SHEET MAKER PAGE ===== -->
+        {% if 'sheet' in allowed_pages %}
+        <div class="page-content sheet-page {% if page_type == 'sheet' %}active{% endif %}">
+            <div class="sheet-maker-compact">
+                <div class="sheet-maker-header">
+                    <h2>Sheet Maker</h2>
+                    <div class="template-actions">
+                        <div class="template-stats" id="templateStats" style="display:none;">
+                            <div class="stat-badge"><i class="fas fa-database"></i><span>Total:</span><span class="stat-value" id="statTotal">0</span></div>
+                            <div class="stat-badge"><i class="fas fa-id-card"></i><span>Unique UPI:</span><span class="stat-value upi" id="statUPI">0</span></div>
+                            <div class="stat-badge"><i class="fas fa-university"></i><span>Unique Bank:</span><span class="stat-value bank" id="statBank">0</span></div>
+                            <div class="stat-badge"><i class="fas fa-globe"></i><span>Unique Website:</span><span class="stat-value" style="color:#8e44ad;" id="statWebsite">0</span></div>
+                        </div>
+                        <button class="template-btn" onclick="downloadTemplate()" id="templateBtn" disabled><i class="fas fa-file-download"></i> Download Template</button>
+                    </div>
+                </div>
+                <div class="sheet-maker-row">
+                    <div class="sheet-maker-group">
+                        <label><i class="fas fa-file-excel"></i> Select Sheet Type</label>
+                        <select class="sheet-maker-select" id="sheetTypeSelect" onchange="updateSelectedSheet()">
+                            <option value="">-- Select Sheet Type --</option>
+                            <option value="upi">UPI (AML)</option>
+                            <option value="investment">Investment Scam</option>
+                            <option value="messaging">Messaging Channel</option>
+                        </select>
+                        <div class="headers-display" id="headersDisplay">
+                            <div class="headers-title"><i class="fas fa-list"></i> Required Input Headers:<span id="headersCount" style="margin-left:auto;font-weight:bold;"></span></div>
+                            <div class="headers-grid" id="headersList"></div>
+                        </div>
+                    </div>
+                    <div class="sheet-maker-group">
+                        <label><i class="fas fa-upload"></i> Upload Your Data</label>
+                        <div class="file-upload-compact" onclick="document.getElementById('fileUpload').click()">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <div id="fileName" class="file-name">No file chosen</div>
+                            <div class="file-info">CSV, Excel → Output: CSV</div>
+                            <input type="file" id="fileUpload" style="display:none;" onchange="updateFileName(this)" accept=".csv,.xlsx,.xls,.xlsm,.xlsb,.ods">
+                        </div>
+                    </div>
+                    <div class="sheet-maker-group">
+                        <label><i class="fas fa-download"></i> Generate Sheet</label>
+                        <button class="generate-btn-compact" id="generateBtn" onclick="generateSheet()" disabled><i class="fas fa-download"></i> Generate CSV</button>
+                    </div>
+                </div>
+                <div class="preview-section" id="previewSection">
+                    <div class="preview-header">
+                        <h4><i class="fas fa-table"></i> Preview: <span id="previewSheetName" style="color:#3498db;"></span><small style="color:#666;font-size:12px;margin-left:8px;">(36-column output)</small></h4>
+                        <button class="btn btn-outline" onclick="closePreview()"><i class="fas fa-times"></i> Close Preview</button>
+                    </div>
+                    <div class="preview-table-container">
+                        <table class="preview-table" id="previewTable">
+                            <thead id="previewTableHead"></thead>
+                            <tbody id="previewTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top:8px;text-align:center;font-size:11px;color:#666;padding:5px;border-top:1px solid #eee;flex-shrink:0;"><i class="fas fa-info-circle"></i> <span id="previewRowCount">Showing 0 rows</span></div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ===== BS INVESTMENT SCAM PAGE ===== -->
+        {% if 'investment' in allowed_pages %}
+        <div class="page-content investment-page {% if page_type == 'investment' %}active{% endif %}">
+            <div class="filters">
+                <div class="filters-header">
+                    <h2><i class="fas fa-search-dollar"></i> BS Investment Scam — Filter Data</h2>
+                    <button type="button" class="clear-filters" onclick="clearInvestmentFilters()"><i class="fas fa-times"></i> Clear Filters</button>
+                </div>
+                <form method="GET" action="/" class="filters-grid" id="investmentFilterForm">
+                    <input type="hidden" name="page" value="investment">
+                    <div class="filter-group">
+                        <label><i class="fas fa-search"></i> Search</label>
+                        <div class="search-box">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" name="inv_search" value="{{ inv_search }}" placeholder="Search by UPI, account, bank, URL..." onkeyup="if(event.keyCode===13) this.form.submit()">
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <label><i class="fas fa-exclamation-triangle"></i> Scam Type</label>
+                        <select name="inv_scam_type" onchange="this.form.submit()" class="{% if inv_scam_type %}active-filter{% endif %}">
+                            <option value="">All Scam Types</option>
+                            {% for st in bs_investment_scam_type_options %}
+                            <option value="{{ st }}" {% if inv_scam_type == st %}selected{% endif %}>{{ st }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label><i class="fas fa-globe"></i> Search For</label>
+                        <select name="inv_search_for" onchange="this.form.submit()" class="{% if inv_search_for %}active-filter{% endif %}">
+                            <option value="">All</option>
+                            {% for sf in bs_investment_search_for_options %}
+                            <option value="{{ sf }}" {% if inv_search_for == sf %}selected{% endif %}>{{ sf }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label><i class="fas fa-wallet"></i> UPI / Bank / Wallet</label>
+                        <select name="inv_wallet" onchange="this.form.submit()" class="{% if inv_wallet %}active-filter{% endif %}">
+                            <option value="">All</option>
+                            {% for w in bs_investment_wallet_options %}
+                            <option value="{{ w }}" {% if inv_wallet == w %}selected{% endif %}>{{ w }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label><i class="fas fa-calendar-alt"></i> Date Range</label>
+                        <div class="date-range-group">
+                            <input type="date" name="inv_date_from" value="{{ inv_date_from }}" onchange="this.form.submit()" class="{% if inv_date_from %}active-filter{% endif %}" title="From date">
+                            <span class="date-range-sep">to</span>
+                            <input type="date" name="inv_date_to" value="{{ inv_date_to }}" onchange="this.form.submit()" class="{% if inv_date_to %}active-filter{% endif %}" title="To date">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Bank Account No.</th>
+                            <th>Bank Name</th>
+                            <th>UPI VPA</th>
+                            <th>Handle</th>
+                            <th>IFSC Code</th>
+                            <th>Scam Type</th>
+                            <th>Search For</th>
+                            <th>UPI / Bank / Wallet</th>
+                            <th>Payment Gateway</th>
+                            <th>UPI URL</th>
+                            <th>Website URL</th>
+                            <th>Web Contact No.</th>
+                            <th>Input User</th>
+                            <th>Inserted Date</th>
+                            <th>Screenshot</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if items %}
+                        {% for item in items %}
+                        <tr>
+                            <td><strong style="color:#e65100;">#{{ item.get("id", "N/A") }}</strong></td>
+                            <td>
+                                <div class="field-container">
+                                    {% if item.get("bank_account_number") and item["bank_account_number"] not in ["NA","N/A","",None] %}
+                                    <span class="text-content" style="font-family:monospace;font-size:11px;">{{ item["bank_account_number"] }}</span>
+                                    <button class="copy-btn" onclick="copyToClipboard('{{ item['bank_account_number']|escape }}', 'Bank Account')"><i class="fas fa-copy"></i></button>
+                                    {% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if item.get("bank_name") and item["bank_name"] not in ["NA","N/A","",None] %}
+                                <span class="text-content" style="font-size:11px;color:#1565c0;font-weight:600;">{{ item["bank_name"] }}</span>
+                                {% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}
+                            </td>
+                            <td>
+                                <div class="field-container">
+                                    {% if item.get("upi_vpa") and item["upi_vpa"] not in ["NA","N/A","",None] %}
+                                    <span class="text-content" style="font-family:monospace;font-size:11px;">{{ item["upi_vpa"] }}</span>
+                                    <button class="copy-btn" onclick="copyToClipboard('{{ item['upi_vpa']|escape }}', 'UPI VPA')"><i class="fas fa-copy"></i></button>
+                                    {% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if item.get("handle") and item["handle"] not in ["NA","N/A","",None] %}
+                                <span style="font-size:11px;color:#37474f;">{{ item["handle"] }}</span>
+                                {% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}
+                            </td>
+                            <td>
+                                {% if item.get("ifsc_code") and item["ifsc_code"] not in ["NA","N/A","",None] %}
+                                <span style="font-family:monospace;font-size:11px;color:#2e7d32;">{{ item["ifsc_code"] }}</span>
+                                {% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}
+                            </td>
+                            <td>
+                                {% if item.get("scam_type") and item["scam_type"] not in ["NA","N/A","",None] %}
+                                <span style="font-size:11px;color:#37474f;">{{ item["scam_type"] }}</span>
+                                {% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}
+                            </td>
+                            <td>
+                                {% if item.get("search_for") and item["search_for"] not in ["NA","N/A","",None] %}
+                                <span class="platform-badge">{{ item["search_for"] }}</span>
+                                {% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}
+                            </td>
+                            <td>
+                                {% if item.get("upi_bank_account_wallet") and item["upi_bank_account_wallet"] not in ["NA","N/A","",None] %}
+                                <span class="wallet-badge">{{ item["upi_bank_account_wallet"] }}</span>
+                                {% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}
+                            </td>
+                            <td>
+                                {% if item.get("payment_gateway_name") and item["payment_gateway_name"] not in ["NA","N/A","",None] %}
+                                <span style="font-size:11px;color:#4a148c;background:#f3e5f5;padding:2px 6px;border-radius:3px;">{{ item["payment_gateway_name"] }}</span>
+                                {% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}
+                            </td>
+                            <td>
+                                <div class="field-container">
+                                    {% if item.get("upi_url") and item["upi_url"] not in ["NA","N/A","",None] %}
+                                    <a href="{{ item['upi_url'] }}" target="_blank" class="url-link" title="{{ item['upi_url'] }}">{{ item['upi_url'][:30] }}{% if item['upi_url']|length > 30 %}...{% endif %}</a>
+                                    <button class="copy-btn" onclick="copyToClipboard('{{ item['upi_url']|escape }}', 'UPI URL')"><i class="fas fa-copy"></i></button>
+                                    {% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="field-container">
+                                    {% if item.get("website_url") and item["website_url"] not in ["NA","N/A","",None] %}
+                                    <a href="{{ item['website_url'] }}" target="_blank" class="url-link" title="{{ item['website_url'] }}">{{ item['website_url'][:30] }}{% if item['website_url']|length > 30 %}...{% endif %}</a>
+                                    <button class="copy-btn" onclick="copyToClipboard('{{ item['website_url']|escape }}', 'Website URL')"><i class="fas fa-copy"></i></button>
+                                    {% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="field-container">
+                                    {% if item.get("web_contact_no") and item["web_contact_no"] not in ["NA","N/A","",None] %}
+                                    <span class="text-content">{{ item["web_contact_no"] }}</span>
+                                    <button class="copy-btn" onclick="copyToClipboard('{{ item['web_contact_no']|escape }}', 'Contact')"><i class="fas fa-copy"></i></button>
+                                    {% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if item.get("input_user") and item["input_user"] not in ["NA","N/A","",None] %}
+                                <span style="font-size:11px;color:#37474f;">{{ item["input_user"] }}</span>
+                                {% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}
+                            </td>
+                            <td>
+                                {% if item.get("inserted_date") and item["inserted_date"] not in ["NA","N/A","",None] %}
+                                <span style="font-size:11px;color:#2c3e50;font-weight:600;">{{ item["inserted_date"] }}</span>
+                                {% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}
+                            </td>
+                            <td>
+                                {% if item.get("screenshot") and item["screenshot"] not in ["NA","N/A","",None] %}
+                                <a href="{{ item['screenshot'] }}" target="_blank" title="View Screenshot"><i class="fas fa-eye" style="color:#e67e22;"></i></a>
+                                {% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr><td colspan="16"><div class="empty-state"><i class="fas fa-search-dollar"></i><h3>No records found</h3><p>Try adjusting your search filters</p><button class="btn btn-primary" style="margin-top:10px;" onclick="clearInvestmentFilters()"><i class="fas fa-times"></i> Clear All Filters</button></div></td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            {% if total_pages is defined and total_pages > 1 %}
+            <div class="pagination">
+                <button class="pagination-btn" onclick="goToPage({{ page_num - 1 }})" {% if page_num <= 1 %}disabled{% endif %}><i class="fas fa-chevron-left"></i> Previous</button>
+                <span class="pagination-info">Page {{ page_num }} of {{ total_pages }} ({{ total_rows }} total)</span>
+                <button class="pagination-btn" onclick="goToPage({{ page_num + 1 }})" {% if page_num >= total_pages %}disabled{% endif %}>Next <i class="fas fa-chevron-right"></i></button>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- ===== SOCIAL MEDIA ACCOUNTS PAGE ===== -->
+        {% if 'social' in allowed_pages %}
+        <div class="page-content social-page {% if page_type == 'social' %}active{% endif %}">
+            <div class="filters">
+                <div class="filters-header">
+                    <h2><i class="fas fa-filter"></i> Filter Data</h2>
+                </div>
+                <form method="GET" action="/" class="filters-grid" id="socialFilterForm">
+                    <input type="hidden" name="page" value="social">
+                    <div class="filter-group">
+                        <label><i class="fas fa-search"></i> Search</label>
+                        <div class="search-box">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" name="social_search" value="{{ social_search }}" placeholder="Search... (press Enter)" id="socialSearchInput" onkeydown="if(event.keyCode===13){event.preventDefault();submitSocialSearch();}">
+                        </div>
+                        <span class="search-hint"><i class="fas fa-info-circle"></i> Press Enter to search</span>
+                    </div>
+                    <div class="filter-group">
+                        <label><i class="fas fa-mobile-alt"></i> Platform</label>
+                        <select name="social_platform" id="socialPlatformSelect" onchange="filterSocialColumns(this.value); this.form.submit();">
+                            <option value="">All Platforms</option>
+                            {% for platform in social_platform_options %}
+                            <option value="{{ platform }}" {% if social_platform == platform %}selected{% endif %}>{{ platform }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label><i class="fas fa-shield-alt"></i> Account Status</label>
+                        <select name="social_status" id="socialStatusSelect" onchange="this.form.submit()" class="{% if social_status_filter %}active-filter{% endif %}">
+                            <option value="">All Status (excl. Perm. Block)</option>
+                            <option value="Active" {% if social_status_filter == 'Active' %}selected{% endif %}>🟢 Active</option>
+                            <option value="Block" {% if social_status_filter == 'Block' %}selected{% endif %}>🔴 Block</option>
+                            <option value="Restricted" {% if social_status_filter == 'Restricted' %}selected{% endif %}>🟡 Restricted</option>
+                            <option value="Frozen" {% if social_status_filter == 'Frozen' %}selected{% endif %}>🔵 Frozen</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label><i class="fas fa-building"></i> Department</label>
+                        <select name="social_department" id="socialDepartmentSelect" onchange="this.form.submit()" class="{% if social_department_filter %}active-filter{% endif %}">
+                            <option value="">All Departments</option>
+                            {% for dept in department_options %}
+                            <option value="{{ dept }}" {% if social_department_filter == dept %}selected{% endif %}>{{ dept }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="action-buttons">
+                        <button type="button" class="action-btn update" onclick="goToUpdatePage()"><i class="fas fa-edit"></i> Update Data</button>
+                        <button type="button" class="action-btn activity" onclick="showActivityLog()"><i class="fas fa-history"></i> Activity Log</button>
+                        <button type="button" class="action-btn permanent" onclick="showPermanentAccounts()"><i class="fas fa-ban"></i> Permanent Block Accounts</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="table-container">
+                <table id="socialMediaTable">
+                    <thead>
+                        <tr>
+                            <th data-col="id">ID</th>
+                            <th data-col="platform">Platform</th>
+                            <th data-col="department">Department</th>
+                            <th data-col="owned_by">Owned By</th>
+                            <th data-col="login_user">Login User</th>
+                            <th data-col="number">Number</th>
+                            <th data-col="login_device">Login Device</th>
+                            <th data-col="sim_inserted_device">SIM Inserted Device</th>
+                            <th data-col="account_status">Account Status</th>
+                            <th data-col="review_status">Review Status</th>
+                            <th data-col="number_type">Number Type</th>
+                            <th data-col="blocked_date">Blocked Date</th>
+                            <th data-col="unblocked_date">Unblocked Date</th>
+                            <th data-col="account_create_date">Account Create Date</th>
+                            <th data-col="sim_operator">Sim Operator</th>
+                            <th data-col="full_name">Full Name</th>
+                            <th data-col="recharge_date">Recharge Date</th>
+                            <th data-col="sim_buy_date">SIM Buy Date</th>
+                            <th data-col="account_type">Account Type</th>
+                            <th data-col="mail_id">Mail Id</th>
+                            <th data-col="account_id">Account Id</th>
+                            <th data-col="password">Password</th>
+                            <th data-col="page_name">Page Name</th>
+                        </tr>
+                    </thead>
+                    <tbody id="socialMediaTableBody">
+                        {% if items %}
+                        {% for item in items %}
+                        {% set raw_status = item.account_status or 'Active' %}
+                        {% set status_lower = raw_status|lower %}
+                        {% if 'permanent' in status_lower %}
+                            {% set row_class = 'row-permanent-block' %}
+                            {% set badge_class = 'status-permanent-block' %}
+                        {% elif 'block' in status_lower %}
+                            {% set row_class = 'row-block' %}
+                            {% set badge_class = 'status-block' %}
+                        {% elif 'restricted' in status_lower %}
+                            {% set row_class = 'row-restricted' %}
+                            {% set badge_class = 'status-restricted' %}
+                        {% elif 'frozen' in status_lower %}
+                            {% set row_class = 'row-frozen' %}
+                            {% set badge_class = 'status-frozen' %}
+                        {% else %}
+                            {% set row_class = 'row-active' %}
+                            {% set badge_class = 'status-active' %}
+                        {% endif %}
+                        <tr id="row-{{ item.id }}" class="{{ row_class }}" data-id="{{ item.id }}">
+                            <td data-col="id">{{ item.id }}</td>
+                            <td data-col="platform"><span class="platform-badge"><i class="fab fa-{{ (item.platform or 'question')|lower }}"></i> {{ item.platform or 'N/A' }}</span></td>
+                            <td data-col="department">
+                                {% if item.department and item.department not in ['N/A','NA','',None] %}
+                                <span style="background:#e8f5e9;color:#1b5e20;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">{{ item.department }}</span>
+                                {% else %}<span style="color:#95a5a6;">—</span>{% endif %}
+                            </td>
+                            <td data-col="owned_by">{{ item.owned_by or 'N/A' }}</td>
+                            <td data-col="login_user">{{ item.login_user or 'N/A' }}</td>
+                            <td data-col="number">
+                                <span style="display:inline-flex;align-items:center;gap:4px;flex-wrap:nowrap;">
+                                    <span>{{ item.number or 'N/A' }}</span>
+                                    {% if item.number and item.number not in ['N/A','NA','',None] %}
+                                    <button class="copy-btn" onclick="copyToClipboard('{{ item.number|escape }}','Number')"><i class="fas fa-copy"></i></button>
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td data-col="login_device">{{ item.login_device or 'N/A' }}</td>
+                            <td data-col="sim_inserted_device">{{ item.sim_inserted_device or 'N/A' }}</td>
+                            <td data-col="account_status">
+                                <span class="status-display {{ badge_class }}">{{ raw_status }}</span>
+                            </td>
+                            <td data-col="review_status">{{ item.review_status or 'NA' }}</td>
+                            <td data-col="number_type">{{ item.number_type or 'N/A' }}</td>
+                            <td data-col="blocked_date">{{ item.blocked_date or 'N/A' }}</td>
+                            <td data-col="unblocked_date">{{ item.unblocked_date or item.unblock_date or 'N/A' }}</td>
+                            <td data-col="account_create_date">{{ item.account_create_date or 'N/A' }}</td>
+                            <td data-col="sim_operator">{{ item.sim_operator or 'N/A' }}</td>
+                            <td data-col="full_name">{{ item.full_name or 'N/A' }}</td>
+                            <td data-col="recharge_date">{{ item.recharge_date or 'N/A' }}</td>
+                            <td data-col="sim_buy_date">{{ item.sim_buy_date or 'N/A' }}</td>
+                            <td data-col="account_type">{{ item.account_type or 'N/A' }}</td>
+                            <td data-col="mail_id">{{ item.mail_id or 'N/A' }}</td>
+                            <td data-col="account_id">{{ item.account_id or 'N/A' }}</td>
+                            <td data-col="password">
+                                <span style="display:inline-flex;align-items:center;gap:4px;">
+                                    {% if item.password and item.password not in ['N/A','NA','',None] %}
+                                    <span style="font-family:monospace;font-size:11px;color:#c0392b;">{{ item.password }}</span>
+                                    <button class="copy-btn" onclick="copyToClipboard('{{ item.password|escape }}','Password')" title="Copy Password"><i class="fas fa-copy"></i></button>
+                                    {% else %}<span style="color:#95a5a6;">N/A</span>{% endif %}
+                                </span>
+                            </td>
+                            <td data-col="page_name">{{ item.page_name or 'N/A' }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr><td colspan="23"><div class="empty-state"><i class="fas fa-users"></i><h3>No social media accounts found</h3><p>Try adjusting your search filters or import some data</p></div></td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            {% if total_pages is defined and total_pages > 1 %}
+            <div class="pagination">
+                <button class="pagination-btn" onclick="goToPage({{ page_num - 1 }})" {% if page_num <= 1 %}disabled{% endif %}><i class="fas fa-chevron-left"></i> Previous</button>
+                <span class="pagination-info">Page {{ page_num }} of {{ total_pages }} ({{ total_rows }} total)</span>
+                <button class="pagination-btn" onclick="goToPage({{ page_num + 1 }})" {% if page_num >= total_pages %}disabled{% endif %}>Next <i class="fas fa-chevron-right"></i></button>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="flash-container">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}{% for message in messages %}
+        <div class="flash-message"><i class="fas fa-check-circle" style="color:#2ecc71;"></i> {{ message }}</div>
+        {% endfor %}{% endif %}
+        {% endwith %}
+    </div>
+
+    <form id="sheetForm" action="/generate-sheet" method="POST" enctype="multipart/form-data" style="display:none;">
+        <input type="hidden" id="formSheetType" name="sheet_type">
+        <input type="file" id="formFileUpload" name="file">
+    </form>
+
+    <script>
+        // ── Platform-specific column visibility ─────────────
+        const PLATFORM_COLUMNS = {
+            'Facebook':       ['id','platform','department','login_user','number','login_device','account_status','account_type','mail_id','account_id','password','page_name'],
+            'Amazon':         ['id','platform','department','login_user','number','login_device','account_status','number_type','full_name','mail_id','account_id','password'],
+            'Instagram':      ['id','platform','department','login_user','number','login_device','account_status','mail_id','account_id','password'],
+            'Telegram':       ['id','platform','department','login_user','number','login_device','account_status','full_name'],
+            'WhatsApp':       ['id','platform','department','login_user','number','login_device','account_status','number_type','full_name','account_type'],
+            'Gmail Accounts': ['id','platform','department','account_status','mail_id','password'],
+            'Total Numbers':  ['id','platform','department','owned_by','number','sim_inserted_device','account_status','number_type','sim_operator'],
+        };
+
+        const ALL_SOCIAL_COLS = ['id','platform','department','owned_by','login_user','number','login_device','sim_inserted_device','account_status','review_status','number_type','blocked_date','unblocked_date','account_create_date','sim_operator','full_name','recharge_date','sim_buy_date','account_type','mail_id','account_id','password','page_name'];
+
+        function filterSocialColumns(platform) {
+            const table = document.getElementById('socialMediaTable');
+            if (!table) return;
+            const visibleCols = (platform && PLATFORM_COLUMNS[platform]) ? PLATFORM_COLUMNS[platform] : ALL_SOCIAL_COLS;
+            table.querySelectorAll('thead th[data-col]').forEach(th => {
+                th.style.display = visibleCols.includes(th.dataset.col) ? '' : 'none';
+            });
+            table.querySelectorAll('tbody tr').forEach(tr => {
+                tr.querySelectorAll('td[data-col]').forEach(td => {
+                    td.style.display = visibleCols.includes(td.dataset.col) ? '' : 'none';
+                });
+            });
+        }
+
+        (function initSocialColumns() {
+            const sel = document.getElementById('socialPlatformSelect');
+            if (sel) filterSocialColumns(sel.value);
+        })();
+
+        const PLATFORM_ICONS = { 'Facebook':'facebook-f','Instagram':'instagram','Telegram':'telegram-plane','WhatsApp':'whatsapp','Amazon':'amazon','Gmail Accounts':'envelope','Total Numbers':'sim-card' };
+        const PLATFORM_ACCOUNT_STATUS = {
+            "Facebook":["Active","Block","Restricted","Permanent Block"],
+            "Instagram":["Active","Block","Permanent Block"],
+            "Telegram":["Active","Frozen","Permanent Block"],
+            "WhatsApp":["Active","Block","Permanent Block","Restricted"],
+            "Amazon":["Active","Block","Permanent Block"],
+            "Gmail Accounts":["Active","Block","Permanent Block"],
+            "Total Numbers":["Active","Block","Permanent Block"]
+        };
+        const STATUS_BG_CLASS = { 'Active':'status-bg-active','Block':'status-bg-block','Blocked':'status-bg-block','Restricted':'status-bg-restricted','Frozen':'status-bg-frozen','Permanent Block':'status-bg-permanent' };
+        const STATUS_NAME_CLASS = { 'Active':'color-active','Block':'color-block','Blocked':'color-block','Restricted':'color-restricted','Frozen':'color-frozen','Permanent Block':'color-permanent' };
+        const STATUS_COUNT_CLASS = { 'Active':'count-active','Block':'count-block','Blocked':'count-block','Restricted':'count-restricted','Frozen':'count-frozen','Permanent Block':'count-permanent' };
+
+        let trackerCurrentView = 'active';
+        let cachedTrackerStats = null;
+        let scrapingCurrentView = 'scam';
+        let cachedScrapingStats = null;
+        let pendingAction = null;
+        let previewDataCache = null;
+
+        function getPlatformIconHtml(iconName, extraStyle) {
+            const fasIcons = ['envelope', 'sim-card', 'globe', 'question'];
+            const prefix = fasIcons.includes(iconName) ? 'fas' : 'fab';
+            const styleAttr = extraStyle ? ` style="${extraStyle}"` : '';
+            return `<i class="${prefix} fa-${iconName}"${styleAttr}></i>`;
+        }
+
+        // ─── Page / Navigation ──────────────────────────────────────
+        function changePage(pageType) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('page', pageType);
+            url.searchParams.delete('page_num');
+            window.location.href = url.toString();
+        }
+
+        function submitSocialSearch() { document.getElementById('socialFilterForm').submit(); }
+
+        function goToUpdatePage() {
+            const search = document.getElementById('socialSearchInput').value;
+            const platform = document.getElementById('socialPlatformSelect').value;
+            const department = document.getElementById('socialDepartmentSelect').value;
+            let url = '/update-social-accounts';
+            const params = [];
+            if (search) params.push('search=' + encodeURIComponent(search));
+            if (platform) params.push('platform=' + encodeURIComponent(platform));
+            if (department) params.push('department_filter=' + encodeURIComponent(department));
+            sessionStorage.setItem('social_needs_refresh', '1');
+            if (params.length) url += '?' + params.join('&');
+            window.location.href = url;
+        }
+
+        (function checkSocialRefresh() {
+            if ('{{ page_type }}' === 'social' && sessionStorage.getItem('social_needs_refresh') === '1') {
+                sessionStorage.removeItem('social_needs_refresh');
+            }
+        })();
+
+        function clearInvestmentFilters() {
+            window.location.href = "/?page=investment";
+        }
+
+        // ─── Investment Tracker ──────────────────────────────────────
+        let cachedInvStats = null;
+        let invCurrentView = 'users';
+
+        function showInvestmentTracker() {
+            document.getElementById('invTrackerModal').classList.add('active');
+            invCurrentView = 'users';
+            document.getElementById('invBtn1').classList.add('active');
+            document.getElementById('invBtn2').classList.remove('active');
+            document.getElementById('invBtn3').classList.remove('active');
+            if (!cachedInvStats) {
+                loadInvTrackerData();
+            } else {
+                displayInvTrackerData(cachedInvStats);
+            }
+        }
+
+        function closeInvestmentTracker() {
+            document.getElementById('invTrackerModal').classList.remove('active');
+        }
+
+        function setInvView(view) {
+            invCurrentView = view;
+            document.getElementById('invBtn1').classList.toggle('active', view === 'users');
+            document.getElementById('invBtn2').classList.toggle('active', view === 'scamtype');
+            document.getElementById('invBtn3').classList.toggle('active', view === 'total');
+            if (cachedInvStats) displayInvTrackerData(cachedInvStats);
+        }
+
+        function clearInvTrackerDates() {
+            document.getElementById('invTrackerFrom').value = '';
+            document.getElementById('invTrackerTo').value = '';
+            cachedInvStats = null;
+            loadInvTrackerData();
+        }
+
+        async function loadInvTrackerData() {
+            document.getElementById('invTrackerBody').innerHTML = '<div class="tracker-loading"><div class="spinner"></div><p>Loading statistics...</p></div>';
+            try {
+                const from = document.getElementById('invTrackerFrom').value;
+                const to   = document.getElementById('invTrackerTo').value;
+                let url = '/investment-tracker-stats';
+                const params = [];
+                if (from) params.push('date_from=' + from);
+                if (to)   params.push('date_to='   + to);
+                if (params.length) url += '?' + params.join('&');
+                const resp = await fetch(url);
+                const data = await resp.json();
+                if (data.success) {
+                    cachedInvStats = data;
+                    displayInvTrackerData(data);
+                } else {
+                    document.getElementById('invTrackerBody').innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Error: ${data.error}</p></div>`;
+                }
+            } catch(e) {
+                document.getElementById('invTrackerBody').innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Network error: ${e.message}</p></div>`;
+            }
+        }
+
+        function getInvPillClass(sf) {
+            const m = {'web':'web','telegram':'telegram','whatsapp':'whatsapp','facebook':'facebook','instagram':'instagram','youtube':'youtube','x':'x','thread':'thread'};
+            return 'inv-pill-' + (m[(sf||'').toLowerCase()] || 'default');
+        }
+
+        function displayInvTrackerData(data) {
+            const body = document.getElementById('invTrackerBody');
+            let html = `<div class="inv-total-banner">
+                <div>
+                    <span class="banner-label"><i class="fas fa-database"></i> Total Records</span>
+                    <span class="banner-num">${(data.total_rows||0).toLocaleString()}</span>
+                </div>
+                <div class="inv-mini-stats">
+                    <div class="inv-mini-stat">
+                        <span class="mini-label"><i class="fas fa-id-card"></i> Unique UPI IDs</span>
+                        <span class="mini-num">${(data.unique_upi_count||0).toLocaleString()}</span>
+                    </div>
+                    <div class="inv-mini-stat">
+                        <span class="mini-label"><i class="fas fa-university"></i> Unique Bank Accounts</span>
+                        <span class="mini-num">${(data.unique_bank_count||0).toLocaleString()}</span>
+                    </div>
+                </div>
+            </div>`;
+
+            if (invCurrentView === 'users') {
+                const uc = data.users_count || {};
+                const users = Object.keys(uc).sort();
+                if (!users.length) { html += '<div class="empty-state"><i class="fas fa-users"></i><p>No data found</p></div>'; }
+                else {
+                    html += `<p class="inv-section-title"><i class="fas fa-users"></i> Users Count — by Search For</p>`;
+                    users.forEach(user => {
+                        const sfMap = uc[user];
+                        const total = Object.values(sfMap).reduce((a,b) => a+b, 0);
+                        html += `<div class="inv-user-card">
+                            <div class="inv-user-header">
+                                <span class="inv-user-name"><i class="fas fa-user"></i>${user}</span>
+                                <span class="inv-user-total">${total}</span>
+                            </div>
+                            <div class="inv-pills">`;
+                        Object.entries(sfMap).sort((a,b) => b[1]-a[1]).forEach(([sf, cnt]) => {
+                            html += `<span class="inv-pill ${getInvPillClass(sf)}">${sf}<span class="inv-pill-count">${cnt}</span></span>`;
+                        });
+                        html += `</div></div>`;
+                    });
+                }
+            } else if (invCurrentView === 'scamtype') {
+                const sc = data.scam_type_counts || {};
+                const users = Object.keys(sc).sort();
+                if (!users.length) { html += '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>No data found</p></div>'; }
+                else {
+                    html += `<p class="inv-section-title"><i class="fas fa-exclamation-triangle"></i> Scam Type Counts — per User</p>`;
+                    users.forEach(user => {
+                        const stMap = sc[user];
+                        const total = Object.values(stMap).reduce((a,b) => a+b, 0);
+                        html += `<div class="inv-user-card">
+                            <div class="inv-user-header">
+                                <span class="inv-user-name"><i class="fas fa-user"></i>${user}</span>
+                                <span class="inv-user-total">${total}</span>
+                            </div>
+                            <div class="inv-pills">`;
+                        Object.entries(stMap).sort((a,b) => b[1]-a[1]).forEach(([st, cnt]) => {
+                            html += `<span class="inv-pill inv-pill-default">${st}<span class="inv-pill-count">${cnt}</span></span>`;
+                        });
+                        html += `</div></div>`;
+                    });
+                }
+            } else if (invCurrentView === 'total') {
+                const tc = data.total_counts || {};
+                const scamTypes = Object.keys(tc).sort();
+                if (!scamTypes.length) { html += '<div class="empty-state"><i class="fas fa-chart-pie"></i><p>No data found</p></div>'; }
+                else {
+                    html += `<p class="inv-section-title"><i class="fas fa-chart-pie"></i> Total Counts — Scam Type × Search For</p>`;
+                    scamTypes.forEach(st => {
+                        const sfMap = tc[st];
+                        const total = Object.values(sfMap).reduce((a,b) => a+b, 0);
+                        html += `<div class="inv-scam-row">
+                            <div class="inv-scam-header">
+                                <span class="inv-scam-label">${st}</span>
+                                <span class="inv-scam-total">${total}</span>
+                            </div>
+                            <div class="inv-pills">`;
+                        Object.entries(sfMap).sort((a,b) => b[1]-a[1]).forEach(([sf, cnt]) => {
+                            html += `<span class="inv-pill ${getInvPillClass(sf)}">${sf}<span class="inv-pill-count">${cnt}</span></span>`;
+                        });
+                        html += `</div></div>`;
+                    });
+                }
+            }
+
+            body.innerHTML = html;
+        }
+
+        // ─── Scraping Tracker ────────────────────────────────────────
+        function showScrapingTracker() {
+            document.getElementById('scrapingTrackerModal').classList.add('active');
+            scrapingCurrentView = 'scam';
+            document.getElementById('scrapToggleScam').classList.add('active');
+            document.getElementById('scrapTogglePlatform').classList.remove('active');
+            if (!cachedScrapingStats) {
+                loadScrapingTrackerData();
+            } else {
+                displayScrapingTrackerData(cachedScrapingStats);
+            }
+        }
+
+        function closeScrapingTracker() {
+            document.getElementById('scrapingTrackerModal').classList.remove('active');
+        }
+
+        function setScrapingView(view) {
+            scrapingCurrentView = view;
+            document.getElementById('scrapToggleScam').classList.toggle('active', view === 'scam');
+            document.getElementById('scrapTogglePlatform').classList.toggle('active', view === 'platform');
+            if (cachedScrapingStats) displayScrapingTrackerData(cachedScrapingStats);
+        }
+
+        function loadScrapingTrackerData() {
+            const body = document.getElementById('scrapingTrackerBody');
+            body.innerHTML = '<div class="tracker-loading"><div class="spinner"></div><p>Loading statistics...</p></div>';
+            fetch('/scraping-tracker-stats')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        cachedScrapingStats = data.stats;
+                        displayScrapingTrackerData(data.stats);
+                    } else {
+                        body.innerHTML = `<div class="tracker-loading" style="color:#e74c3c;"><p>Error: ${data.error}</p></div>`;
+                    }
+                })
+                .catch(() => {
+                    body.innerHTML = '<div class="tracker-loading" style="color:#e74c3c;"><p>Error loading data. Please try again.</p></div>';
+                });
+        }
+
+        function getPillClass(platform) {
+            const map = {
+                'Telegram':'pill-telegram', 'WhatsApp':'pill-whatsapp',
+                'Facebook':'pill-facebook', 'Instagram':'pill-instagram',
+                'YouTube':'pill-youtube', 'Threads':'pill-threads',
+                'X':'pill-x', 'Unknown':'pill-unknown'
+            };
+            return map[platform] || 'pill-default';
+        }
+
+        function getPlatformIcon(platform) {
+            const map = {
+                'Telegram':'paper-plane','WhatsApp':'whatsapp','Facebook':'facebook-f',
+                'Instagram':'instagram','YouTube':'youtube','Threads':'at','X':'times',
+                'Unknown':'question-circle'
+            };
+            const fab = ['paper-plane','whatsapp','facebook-f','instagram','youtube','at'];
+            const icon = map[platform] || 'globe';
+            const prefix = fab.includes(icon) ? 'fab' : 'fas';
+            return `<i class="${prefix} fa-${icon}"></i>`;
+        }
+
+        function displayScrapingTrackerData(stats) {
+            const body = document.getElementById('scrapingTrackerBody');
+
+            let html = `<div class="scraping-total-banner">
+                <span class="banner-label"><i class="fas fa-database"></i> Total Data Records</span>
+                <span class="banner-num">${stats.total.toLocaleString()}</span>
+            </div>`;
+
+            if (scrapingCurrentView === 'scam') {
+                const breakdown = stats.scam_platform_breakdown || {};
+                const scamCounts = stats.scam_counts || {};
+
+                const scamIconMap = {
+                    'Investment Scam':'chart-line','Carding Scam':'credit-card',
+                    'Shopping Scam':'shopping-cart','Job Scam':'briefcase',
+                    'Subscription Scam':'bell','Loan Scam':'hand-holding-usd',
+                    'Currency Exchange Scam':'exchange-alt',
+                    'Fake Account Selling Scam':'user-secret','Unknown':'tag'
+                };
+
+                const sortedScams = Object.entries(scamCounts).sort((a,b) => b[1]-a[1]);
+
+                if (sortedScams.length === 0) {
+                    html += '<div class="empty-state"><i class="fas fa-inbox"></i><p>No scam data available.</p></div>';
+                } else {
+                    html += `<div class="scrap-section-title"><i class="fas fa-layer-group"></i> Scam Type × Platform Breakdown</div>`;
+                    sortedScams.forEach(([scam, total]) => {
+                        const icon = scamIconMap[scam] || 'tag';
+                        const platforms = breakdown[scam] || {};
+                        const sortedPlatforms = Object.entries(platforms).sort((a,b) => b[1]-a[1]);
+
+                        let pillsHtml = '';
+                        if (sortedPlatforms.length === 0) {
+                            pillsHtml = '<span style="font-size:11px;color:#adb5bd;font-style:italic;">No platform data</span>';
+                        } else {
+                            sortedPlatforms.forEach(([plat, cnt]) => {
+                                const pillClass = getPillClass(plat);
+                                const platIcon = getPlatformIcon(plat);
+                                pillsHtml += `<span class="scrap-pill ${pillClass}" title="${plat}: ${cnt}">
+                                    ${platIcon} ${plat}
+                                    <span class="scrap-pill-count">${cnt.toLocaleString()}</span>
+                                </span>`;
+                            });
+                        }
+
+                        html += `<div class="scrap-scam-card">
+                            <div class="scrap-scam-header">
+                                <div class="scrap-scam-name"><i class="fas fa-${icon}"></i> ${scam}</div>
+                                <span class="scrap-scam-total">${total.toLocaleString()}</span>
+                            </div>
+                            <div class="scrap-platform-pills">${pillsHtml}</div>
+                        </div>`;
+                    });
+                }
+
+            } else {
+                const platformCounts = stats.platform_counts || {};
+                const sorted = Object.entries(platformCounts).sort((a,b) => b[1]-a[1]);
+
+                html += `<div class="scrap-section-title"><i class="fas fa-mobile-alt"></i> Platform-wise Total Count</div>`;
+                if (sorted.length === 0) {
+                    html += '<div class="empty-state"><p>No platform data available.</p></div>';
+                } else {
+                    sorted.forEach(([plat, cnt]) => {
+                        const platIcon = getPlatformIcon(plat);
+                        html += `<div class="scrap-stat-card">
+                            <div class="scrap-stat-label">${platIcon} ${plat}</div>
+                            <span class="scrap-stat-count">${cnt.toLocaleString()}</span>
+                        </div>`;
+                    });
+                }
+            }
+
+            body.innerHTML = html;
+        }
+
+        // ─── Social Tracker ──────────────────────────────────────────
+        function showTracker() {
+            document.getElementById('trackerModal').classList.add('active');
+            trackerCurrentView = 'active';
+            document.getElementById('toggleActiveBtn').classList.add('active');
+            document.getElementById('toggleTotalBtn').classList.remove('active');
+            document.getElementById('togglePermBtn').classList.remove('active');
+            loadTrackerData();
+        }
+
+        function closeTracker() { document.getElementById('trackerModal').classList.remove('active'); }
+
+        function setTrackerView(view) {
+            trackerCurrentView = view;
+            document.getElementById('toggleActiveBtn').classList.toggle('active', view === 'active');
+            document.getElementById('toggleTotalBtn').classList.toggle('active', view === 'total');
+            document.getElementById('togglePermBtn').classList.toggle('active', view === 'perm');
+            if (cachedTrackerStats) displayTrackerData(cachedTrackerStats);
+        }
+
+        function loadTrackerData() {
+            document.getElementById('trackerBody').innerHTML = '<div class="tracker-loading"><div class="spinner"></div><p>Loading tracker statistics...</p></div>';
+            fetch('/tracker-stats')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        cachedTrackerStats = data.stats;
+                        displayTrackerData(data.stats);
+                    } else {
+                        document.getElementById('trackerBody').innerHTML = `<div class="tracker-loading" style="color:#e74c3c;"><p>Error: ${data.error}</p></div>`;
+                    }
+                })
+                .catch(() => {
+                    document.getElementById('trackerBody').innerHTML = '<div class="tracker-loading" style="color:#e74c3c;"><p>Error loading tracker.</p></div>';
+                });
+        }
+
+        function getStatusColorClasses(status) {
+            return {
+                bg: STATUS_BG_CLASS[status] || 'status-bg-default',
+                nameClass: STATUS_NAME_CLASS[status] || 'color-default',
+                countClass: STATUS_COUNT_CLASS[status] || 'count-default'
+            };
+        }
+
+        function displayTrackerData(stats) {
+            const body = document.getElementById('trackerBody');
+            const platforms = ['Facebook','Telegram','WhatsApp','Instagram','Amazon','Gmail Accounts','Total Numbers'];
+
+            if (trackerCurrentView === 'perm') {
+                const permCounts = stats.perm_block_counts || {};
+                const permTotal = stats.perm_block_total || 0;
+                let html = `<div class="tracker-summary">
+                    <h3><i class="fas fa-ban" style="color:#ef4444;"></i> Permanent Block Accounts by Platform</h3>
+                    <div class="summary-grid">`;
+                platforms.forEach(p => {
+                    const iconName = PLATFORM_ICONS[p] || 'globe';
+                    const count = permCounts[p] || 0;
+                    html += `<div class="summary-item">
+                        <div class="platform">${getPlatformIconHtml(iconName, 'color:#ef4444;font-size:14px;')}${p}</div>
+                        <div class="count perm-count">${count}</div>
+                    </div>`;
+                });
+                html += `</div><div class="total-accounts">Total Permanent Block: <span class="total-count" style="color:#ef4444;">${permTotal}</span></div></div>`;
+                html += `<div class="tracker-details"><h3><i class="fas fa-list-alt"></i> Platform-wise Breakdown</h3>`;
+                platforms.forEach(p => {
+                    const count = permCounts[p] || 0;
+                    if (count > 0) {
+                        const iconName = PLATFORM_ICONS[p] || 'globe';
+                        html += `<div class="platform-section">
+                            <div class="platform-header">
+                                <h4>${getPlatformIconHtml(iconName, 'color:#ef4444;')} ${p}</h4>
+                                <span class="platform-total perm">Permanent Block: ${count}</span>
+                            </div>
+                            <div class="status-item status-bg-permanent" style="max-width:200px;">
+                                <div class="status-name color-permanent"><i class="fas fa-ban"></i> Permanent Block</div>
+                                <div class="status-count count-permanent">${count}</div>
+                            </div>
+                        </div>`;
+                    }
+                });
+                html += '</div>';
+                body.innerHTML = html;
+                return;
+            }
+
+            const isActiveView = trackerCurrentView === 'active';
+            const summaryTitle = isActiveView
+                ? '<i class="fas fa-check-circle" style="color:#16a34a;"></i> Active Accounts by Platform'
+                : '<i class="fas fa-chart-bar"></i> Platform-Wise Account Summary';
+
+            let html = `<div class="tracker-summary"><h3>${summaryTitle}</h3><div class="summary-grid">`;
+            let grandTotal = 0;
+            platforms.forEach(p => {
+                const statusData = stats.platform_status_counts[p] || {};
+                const iconName = PLATFORM_ICONS[p] || 'globe';
+                let displayCount, countClass;
+                if (isActiveView) {
+                    displayCount = statusData['Active'] || 0;
+                    countClass = 'active-count';
+                } else {
+                    displayCount = Object.entries(statusData).filter(([s]) => s !== 'Permanent Block').reduce((sum, [,n]) => sum+n, 0);
+                    countClass = '';
+                }
+                grandTotal += displayCount;
+                html += `<div class="summary-item">
+                    <div class="platform">${getPlatformIconHtml(iconName)}${p}</div>
+                    <div class="count ${countClass}">${displayCount}</div>
+                </div>`;
+            });
+            const totalLabel = isActiveView ? 'Total Active Accounts:' : 'Total Accounts (excl. Perm. Block):';
+            html += `</div><div class="total-accounts">${totalLabel} <span class="total-count" style="color:${isActiveView?'#16a34a':'#5d9cec'};">${grandTotal}</span></div></div>`;
+
+            if (!isActiveView) {
+                html += '<div class="tracker-details"><h3><i class="fas fa-list-alt"></i> Account Status by Platform</h3>';
+                platforms.forEach(p => {
+                    const statusData = stats.platform_status_counts[p] || {};
+                    const iconName = PLATFORM_ICONS[p] || 'globe';
+                    const actualStatuses = Object.entries(statusData).filter(([s]) => s !== 'Permanent Block');
+                    const total = actualStatuses.reduce((sum, [,n]) => sum + n, 0);
+                    if (total > 0) {
+                        html += `<div class="platform-section"><div class="platform-header"><h4>${getPlatformIconHtml(iconName)} ${p}</h4><span class="platform-total">Total: ${total}</span></div><div class="status-grid">`;
+                        actualStatuses.sort((a, b) => {
+                            if (a[0] === 'Active') return -1;
+                            if (b[0] === 'Active') return 1;
+                            return b[1] - a[1];
+                        });
+                        actualStatuses.forEach(([status, count]) => {
+                            if (count > 0) {
+                                const {bg, nameClass, countClass} = getStatusColorClasses(status);
+                                html += `<div class="status-item ${bg}"><div class="status-name ${nameClass}"><i class="fas fa-circle" style="font-size:7px;"></i> ${status}</div><div class="status-count ${countClass}">${count}</div></div>`;
+                            }
+                        });
+                        html += '</div></div>';
+                    }
+                });
+                html += '</div>';
+            }
+            body.innerHTML = html;
+        }
+
+        // ─── Activity Log ────────────────────────────────────────────
+        function showActivityLog() {
+            document.getElementById('activityModal').classList.add('active');
+            document.getElementById('activityBody').innerHTML = `<div style="text-align:center;padding:60px 20px;"><i class="fas fa-clock" style="font-size:52px;color:#a855f7;margin-bottom:18px;display:block;"></i><h2 style="color:#2c3e50;font-size:20px;margin-bottom:10px;">Implement Soon</h2><p style="color:#7f8c8d;font-size:15px;font-weight:500;">Have Some Patience</p></div>`;
+        }
+        function closeActivityLog() { document.getElementById('activityModal').classList.remove('active'); }
+
+        // ─── Permanent Block Modal ───────────────────────────────────
+        function showPermanentAccounts() {
+            document.getElementById('permanentModal').classList.add('active');
+            const permPlatform = document.getElementById('permPlatformFilter');
+            if (permPlatform) permPlatform.value = '';
+            loadPermanentAccounts('', '');
+        }
+        function closePermanentAccounts() { document.getElementById('permanentModal').classList.remove('active'); }
+
+        function loadPermanentAccounts(search, platform) {
+            const body = document.getElementById('permanentBody');
+            body.innerHTML = '<div class="tracker-loading"><div class="spinner"></div><p>Loading...</p></div>';
+            const params = [];
+            if (search) params.push('search=' + encodeURIComponent(search));
+            if (platform) params.push('platform=' + encodeURIComponent(platform));
+            const url = '/get-permanent-block-accounts' + (params.length ? '?' + params.join('&') : '');
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) displayPermanentAccounts(data.accounts, data.count, search || '', platform || '');
+                    else body.innerHTML = `<div class="tracker-loading" style="color:#e74c3c;"><p>Error: ${data.error}</p></div>`;
+                })
+                .catch(() => {
+                    body.innerHTML = '<div class="tracker-loading" style="color:#e74c3c;"><p>Error loading data.</p></div>';
+                });
+        }
+
+        function searchPermanentAccounts() {
+            const search = document.getElementById('permSearchInput').value;
+            const platform = document.getElementById('permPlatformFilter')?.value || '';
+            loadPermanentAccounts(search, platform);
+        }
+
+        function displayPermanentAccounts(accounts, count, searchVal, platformVal) {
+            const body = document.getElementById('permanentBody');
+            const searchBox = `<div style="margin-bottom:14px;display:flex;gap:8px;align-items:center;">
+                <div style="position:relative;flex:1;">
+                    <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#aaa;font-size:13px;"></i>
+                    <input id="permSearchInput" type="text" value="${searchVal||''}" placeholder="Search by number, device, platform..." style="width:100%;padding:8px 12px 8px 32px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter') searchPermanentAccounts()">
+                </div>
+                <button onclick="searchPermanentAccounts()" style="padding:8px 16px;background:#ef4444;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;"><i class="fas fa-search"></i> Search</button>
+            </div>`;
+            let html = `<div class="permanent-stats"><h3><i class="fas fa-ban"></i> Permanently Blocked Accounts${platformVal ? ' — ' + platformVal : ''}</h3><div class="permanent-count">${count} Accounts</div></div>${searchBox}`;
+            if (count > 0) {
+                html += `<div style="overflow-x:auto;"><table class="activity-table"><thead><tr><th>#</th><th>Owned By</th><th>Number</th><th>Login Device</th><th>Platform</th><th>Blocked Date</th><th>Active Duration</th></tr></thead><tbody>`;
+                accounts.forEach((a,i) => {
+                    const iconName = PLATFORM_ICONS[a.platform] || 'globe';
+                    html += `<tr style="background:#fff5f5;"><td style="color:#7f8c8d;font-size:11px;">${i+1}</td><td>${a.owned_by||'N/A'}</td><td>${a.number||'N/A'}</td><td>${a.login_device||'N/A'}</td><td><span style="background:#e3f2fd;color:#1976d2;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">${getPlatformIconHtml(iconName, 'margin-right:3px;')}${a.platform||'N/A'}</span></td><td>${a.blocked_date||'N/A'}</td><td><span style="background:#ef4444;color:white;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">${a.active_duration||'N/A'}</span></td></tr>`;
+                });
+                html += '</tbody></table></div>';
+            } else {
+                html += `<div class="empty-state" style="padding:50px 20px;"><i class="fas fa-ban" style="font-size:48px;color:#ddd;display:block;margin-bottom:12px;"></i><h3>${searchVal?'No results for "'+searchVal+'"':'No Permanently Blocked Accounts'}</h3></div>`;
+            }
+            body.innerHTML = html;
+        }
+
+        function cancelAction() { document.getElementById('confirmationModal').classList.remove('active'); pendingAction = null; }
+        function confirmAction() { document.getElementById('confirmationModal').classList.remove('active'); pendingAction = null; }
+
+        // ─── Sheet Maker ─────────────────────────────────────────────
+        function updateSelectedSheet() {
+            const sheetType = document.getElementById('sheetTypeSelect').value;
+            const headersDisplay = document.getElementById('headersDisplay');
+            if (sheetType) {
+                headersDisplay.style.display = 'block';
+                fetch(`/get-sheet-headers/${sheetType}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            const list = document.getElementById('headersList');
+                            list.innerHTML = '';
+                            data.headers.forEach(h => { const el = document.createElement('div'); el.className = 'header-item'; el.textContent = h; el.title = h; list.appendChild(el); });
+                            document.getElementById('headersCount').textContent = `${data.headers.length} headers`;
+                            document.getElementById('formSheetType').value = sheetType;
+                            document.getElementById('templateBtn').disabled = false;
+                            document.getElementById('templateStats').style.display = 'flex';
+                            if (document.getElementById('fileUpload').files.length > 0) {
+                                document.getElementById('generateBtn').disabled = false;
+                                previewData();
+                            }
+                        }
+                    });
+            } else {
+                headersDisplay.style.display = 'none';
+                document.getElementById('generateBtn').disabled = true;
+                document.getElementById('templateBtn').disabled = true;
+                document.getElementById('templateStats').style.display = 'none';
+            }
+            closePreview(); previewDataCache = null;
+        }
+
+        function updateFileName(input) {
+            document.getElementById('fileName').textContent = input.files[0] ? input.files[0].name : 'No file chosen';
+            const dt = new DataTransfer();
+            if (input.files[0]) dt.items.add(input.files[0]);
+            document.getElementById('formFileUpload').files = dt.files;
+            const sheetType = document.getElementById('sheetTypeSelect').value;
+            const hasFile = input.files.length > 0;
+            document.getElementById('generateBtn').disabled = !(sheetType && hasFile);
+            closePreview(); previewDataCache = null;
+            document.getElementById('templateStats').style.display = 'none';
+            if (sheetType && hasFile) {
+                previewData();
+            }
+        }
+
+        function downloadTemplate() {
+            const sheetType = document.getElementById('sheetTypeSelect').value;
+            if (!sheetType) { showToast('Please select a sheet type first!', true); return; }
+            showLoading(); window.location.href = `/download-template/${sheetType}`;
+            setTimeout(hideLoading, 1000);
+        }
+
+        function previewData() {
+            const sheetType = document.getElementById('sheetTypeSelect').value;
+            const fileInput = document.getElementById('fileUpload');
+            if (!sheetType) { showToast('Please select a sheet type first!', true); return; }
+            if (!fileInput.files.length) { showToast('Please select a file first!', true); return; }
+            showLoading();
+            const formData = new FormData();
+            formData.append('sheet_type', sheetType);
+            formData.append('file', fileInput.files[0]);
+            fetch('/preview-sheet', { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(data => {
+                    hideLoading();
+                    if (data.success) { previewDataCache = data; displayPreviewData(data); updateTemplateStats(data); }
+                    else showToast(data.error || 'Error previewing data', true);
+                })
+                .catch(e => { hideLoading(); showToast('Error: ' + e.message, true); });
+        }
+
+        function updateTemplateStats(data) {
+            document.getElementById('templateStats').style.display = 'flex';
+            document.getElementById('statTotal').textContent = data.total_values;
+            document.getElementById('statUPI').textContent = data.unique_upi_ids || 0;
+            document.getElementById('statBank').textContent = data.unique_bank_accounts || 0;
+            document.getElementById('statWebsite').textContent = data.unique_websites || 0;
+        }
+
+        function displayPreviewData(data) {
+            document.getElementById('previewSection').classList.add('show');
+            document.getElementById('previewSheetName').textContent = data.sheet_name;
+            const thead = document.getElementById('previewTableHead');
+            const tbody = document.getElementById('previewTableBody');
+            thead.innerHTML = ''; tbody.innerHTML = '';
+            const hr = document.createElement('tr');
+            data.columns.forEach(col => { const th = document.createElement('th'); th.textContent = col; th.title = col; hr.appendChild(th); });
+            thead.appendChild(hr);
+            (data.preview_rows || []).forEach(row => {
+                const tr = document.createElement('tr');
+                data.columns.forEach(col => {
+                    const td = document.createElement('td');
+                    const val = row[col] || '';
+                    if (!val || val === 'NA') { td.className = 'na-cell'; td.textContent = 'N/A'; }
+                    else { td.textContent = val; td.title = val; }
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+            document.getElementById('previewRowCount').textContent = `Showing ${(data.preview_rows||[]).length} rows (${data.columns.length} columns)`;
+            document.getElementById('previewSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function closePreview() { document.getElementById('previewSection').classList.remove('show'); }
+
+        function generateSheet() {
+            const sheetType = document.getElementById('sheetTypeSelect').value;
+            const fileInput = document.getElementById('fileUpload');
+            if (!sheetType) { showToast('Please select a sheet type first!', true); return; }
+            if (!fileInput.files.length) { showToast('Please select a file first!', true); return; }
+            showLoading();
+            document.getElementById('sheetForm').submit();
+            setTimeout(hideLoading, 5000);
+        }
+
+        // ─── Helpers ─────────────────────────────────────────────────
+        function copyToClipboard(text, fieldName) {
+            if (!text || ['NA','null','N/A'].includes(text)) { showToast(`No ${fieldName} to copy`, true); return; }
+            const ta = document.createElement('textarea');
+            ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            try {
+                ta.select(); ta.setSelectionRange(0, 99999);
+                if (document.execCommand('copy')) showToast(`${fieldName} copied!`);
+                else throw new Error();
+            } catch {
+                if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => showToast(`${fieldName} copied!`)).catch(() => showToast('Failed to copy', true));
+            } finally { document.body.removeChild(ta); }
+        }
+
+        function showToast(message, isError=false, isSuccess=false) {
+            const ex = document.querySelector('.toast'); if (ex) ex.remove();
+            const t = document.createElement('div');
+            t.className = `toast ${isError?'error':''} ${isSuccess?'success':''}`;
+            t.textContent = message;
+            document.body.appendChild(t);
+            setTimeout(() => { if (t.parentNode) t.remove(); }, 3000);
+        }
+
+        function clearFilters() { window.location.href = "/?page=scraping"; }
+
+        function goToPage(page) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('page_num', page);
+            showLoading(); window.location.href = url.toString();
+        }
+
+        function showLoading() { document.getElementById('loadingOverlay').style.display = 'flex'; }
+        function hideLoading() { document.getElementById('loadingOverlay').style.display = 'none'; }
+
+        // Drag-drop for file upload
+        document.querySelectorAll('.file-upload-compact').forEach(area => {
+            area.addEventListener('dragover', e => { e.preventDefault(); area.style.borderColor = '#3498db'; area.style.background = '#e8f4fc'; });
+            area.addEventListener('dragleave', e => { e.preventDefault(); area.style.borderColor = '#dee2e6'; area.style.background = 'white'; });
+            area.addEventListener('drop', e => {
+                e.preventDefault(); area.style.borderColor = '#dee2e6'; area.style.background = 'white';
+                if (e.dataTransfer.files.length) {
+                    const fi = document.getElementById('fileUpload');
+                    const dt = new DataTransfer(); dt.items.add(e.dataTransfer.files[0]);
+                    fi.files = dt.files; updateFileName(fi);
+                }
+            });
+        });
+
+        // Close modals on backdrop click
+        ['trackerModal','activityModal','permanentModal','confirmationModal','scrapingTrackerModal'].forEach(id => {
+            const modal = document.getElementById(id);
+            if (modal) {
+                modal.addEventListener('click', e => {
+                    if (e.target === modal) {
+                        if (id === 'trackerModal') closeTracker();
+                        else if (id === 'activityModal') closeActivityLog();
+                        else if (id === 'permanentModal') closePermanentAccounts();
+                        else if (id === 'confirmationModal') cancelAction();
+                        else if (id === 'scrapingTrackerModal') closeScrapingTracker();
+                    }
+                });
+            }
+        });
+
+        // ★ CHANGE 4b: ESC handler — closeUserActivityLog() added ★
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') { closeTracker(); closeActivityLog(); closePermanentAccounts(); cancelAction(); closeScrapingTracker(); closeInvestmentTracker(); closeUserActivityLog(); }
+        });
+
+        // Auto-dismiss flash messages
+        setTimeout(() => {
+            document.querySelectorAll('.flash-message').forEach(msg => {
+                msg.style.animation = 'slideIn 0.3s ease reverse forwards';
+                setTimeout(() => { if (msg.parentNode) msg.remove(); }, 300);
+            });
+        }, 5000);
+
+        // File input triggers
+        document.getElementById('fileInput')?.addEventListener('change', function() {
+            if (this.files.length) { showLoading(); document.getElementById('importForm').submit(); }
+        });
+        document.getElementById('fileInputSocial')?.addEventListener('change', function() {
+            if (this.files.length) { showLoading(); document.getElementById('importFormSocial').submit(); }
+        });
+
+        // ============================================================
+        // ★ CHANGE 4a: USER ACTIVITY LOG JS ★
+        // ============================================================
+        let _ualAllLogs = [];
+
+        function showUserActivityLog() {
+            document.getElementById('userActivityLogModal').classList.add('active');
+            _loadUAL();
+        }
+
+        function closeUserActivityLog() {
+            document.getElementById('userActivityLogModal').classList.remove('active');
+        }
+
+        async function _loadUAL() {
+            document.getElementById('ualBody').innerHTML = '<div class="tracker-loading"><div class="spinner"></div><p>Loading activity log...</p></div>';
+            document.getElementById('ualStats').innerHTML = '<i class="fas fa-list"></i> Loading...';
+            try {
+                const resp = await fetch('/get-user-activity-log');
+                const data = await resp.json();
+                if (data.success) {
+                    _ualAllLogs = data.logs;
+                    _renderUAL(_ualAllLogs);
+                } else {
+                    document.getElementById('ualBody').innerHTML = `<div class="ual-empty"><i class="fas fa-exclamation-circle"></i><p>Error: ${data.error}</p></div>`;
+                }
+            } catch(e) {
+                document.getElementById('ualBody').innerHTML = `<div class="ual-empty"><i class="fas fa-exclamation-circle"></i><p>Network error</p></div>`;
+            }
+        }
+
+        function filterUAL() {
+            const search = document.getElementById('ualSearch').value.toLowerCase();
+            const page   = document.getElementById('ualPageFilter').value;
+            const action = document.getElementById('ualActionFilter').value;
+            const filtered = _ualAllLogs.filter(log => {
+                const mp = !page   || log.target_table === page;
+                const ma = !action || log.action_type  === action;
+                const ms = !search || [
+                    log.display_name, log.user_email, log.field_name,
+                    log.old_value, log.new_value, log.action_type,
+                    log.target_table, String(log.target_record_id || ''),
+                    JSON.stringify(log.extra_info || {})
+                ].some(v => (v||'').toLowerCase().includes(search));
+                return mp && ma && ms;
+            });
+            _renderUAL(filtered);
+        }
+
+        function clearUAL() {
+            document.getElementById('ualSearch').value = '';
+            document.getElementById('ualPageFilter').value = '';
+            document.getElementById('ualActionFilter').value = '';
+            _renderUAL(_ualAllLogs);
+        }
+
+        const _UAL_PAGE_LABEL = {
+            'social_media_accounts': 'Social Media Accounts',
+            'scrapping_data': 'Scrapping Data',
+            'BS_Investment_Scam': 'BS Investment Scam'
+        };
+
+        function _renderUAL(logs) {
+            document.getElementById('ualStats').innerHTML = `<i class="fas fa-list"></i> Showing <strong>${logs.length}</strong> records`;
+            if (!logs.length) {
+                document.getElementById('ualBody').innerHTML = `<div class="ual-empty"><i class="fas fa-history"></i><p>No activity found</p></div>`;
+                return;
+            }
+            let rows = '';
+            logs.forEach((log, i) => {
+                const dt = log.created_at
+                    ? new Date(log.created_at).toLocaleString('en-IN', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true})
+                    : '—';
+                const badge = log.action_type === 'field_update'
+                    ? `<span class="ual-badge ual-badge-update"><i class="fas fa-edit"></i> Field Update</span>`
+                    : `<span class="ual-badge ual-badge-import"><i class="fas fa-file-import"></i> Import</span>`;
+                const pageLabel = _UAL_PAGE_LABEL[log.target_table] || log.target_table || '—';
+                let changeHtml = '—';
+                if (log.action_type === 'field_update') {
+                    changeHtml = `<div class="ual-val-change">
+                        <span class="ual-old" title="${log.old_value||''}">${log.old_value||'—'}</span>
+                        <span class="ual-arrow"><i class="fas fa-arrow-right"></i></span>
+                        <span class="ual-new" title="${log.new_value||''}">${log.new_value||'—'}</span>
+                    </div>`;
+                } else if (log.action_type === 'import' && log.extra_info) {
+                    changeHtml = `<span style="font-size:11px;color:#374151;"><i class="fas fa-file-excel" style="color:#2ecc71;"></i> ${log.extra_info.file_name||'file'} &nbsp;•&nbsp; <strong>${log.extra_info.records_count||0}</strong> records</span>`;
+                }
+                rows += `<tr>
+                    <td style="color:#9ca3af;font-size:11px;">${i+1}</td>
+                    <td style="white-space:nowrap;font-size:11px;">${dt}</td>
+                    <td><div style="font-weight:600;color:#2c3e50;font-size:12px;">${log.display_name||'—'}</div><div style="font-size:10px;color:#9ca3af;">${log.user_email||''}</div></td>
+                    <td>${badge}</td>
+                    <td><span class="ual-page-badge">${pageLabel}</span></td>
+                    <td style="font-size:11px;color:#4b5563;font-family:monospace;">${log.field_name||'—'}</td>
+                    <td>${changeHtml}</td>
+                    <td style="font-size:11px;color:#6b7280;">${log.target_record_id||'—'}</td>
+                </tr>`;
+            });
+            document.getElementById('ualBody').innerHTML = `<table class="ual-table">
+                <thead><tr><th>#</th><th>Timestamp</th><th>User</th><th>Action</th><th>Page</th><th>Field</th><th>Change (Old → New)</th><th>Record ID</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+        }
+
+        // Close UAL on backdrop click
+        document.getElementById('userActivityLogModal')?.addEventListener('click', e => {
+            if (e.target === document.getElementById('userActivityLogModal')) closeUserActivityLog();
+        });
+    </script>
+    <div class="dev-credit-footer">Developed by <span>Shubhankar Shukla</span></div>
+</body>
+</html>
